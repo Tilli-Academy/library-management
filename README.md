@@ -121,4 +121,4 @@ Errors are returned as JSON "problem details": `{"status":409,"title":"Conflict"
   [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), via
   [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strahov_Theological_Hall,_Prague_-_7565.jpg).
   Resized and darkened for this app; the adapted image is shared under the same licence.
-- Font: [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) (SIL Open Font License), bundled via Fontsource.
+- Font: [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif) (SIL Open Font License), bundled via Fontsource.

@@ -27,8 +27,7 @@ export function CoverDesigner({
   useEffect(() => {
     let alive = true
     Promise.all([
-      document.fonts.load("600 64px 'Cormorant Garamond'"),
-      document.fonts.load("500 32px 'Cormorant Garamond'"),
+      document.fonts.load("400 64px 'Instrument Serif'"),
     ])
       .catch(() => undefined)
       .finally(() => {
