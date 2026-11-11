@@ -1,0 +1,114 @@
+# PageTurn backend configuration.
+# Secrets are NEVER written in this file. They come from environment variables, or from the
+# git-ignored .env file in the repository root (copy ../.env.example to ../.env).
+spring:
+  application:
+    name: pageturn-backend
+  config:
+    # Load KEY=VALUE pairs from the root .env file. Run the backend from the backend/ folder.
+    import: "optional:file:../.env[.properties]"
+  datasource:
+    url: jdbc:postgresql://${PAGETURN_DB_HOST:localhost}:${PAGETURN_DB_PORT:55437}/${PAGETURN_DB_NAME:pageturn}
+    username: ${PAGETURN_DB_USER:pageturn}
+    password: ${PAGETURN_DB_PASSWORD:}
+    hikari:
+      connection-timeout: 3000
+  jpa:
+    open-in-view: false
+    # Never print SQL in logs (it can contain personal data).
+    show-sql: false
+    hibernate:
+      # Flyway owns the database schema. Hibernate only checks that the Java classes match it.
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+  servlet:
+    multipart:
+      # Only the book cover upload accepts files (see RequestSizeLimitFilter for the per-endpoint limit).
+      max-file-size: 3MB
+      max-request-size: 3328KB
+  autoconfigure:
+    # No auto-generated demo user with a printed password; users live in the database.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
+server:
+  # 127.0.0.1 = reachable only from this machine. The frontend dev server forwards API calls.
+  address: ${PAGETURN_SERVER_ADDRESS:127.0.0.1}
+  port: ${PAGETURN_SERVER_PORT:8097}
+  # "none" in development. Set PAGETURN_FORWARD_HEADERS=native ONLY when running behind a trusted
+  # reverse proxy (e.g. the nginx container), so rate limiting sees the real client IP.
+  forward-headers-strategy: ${PAGETURN_FORWARD_HEADERS:none}
+  tomcat:
+    # Form posts are parsed by the server itself; keep them as small as every other request.
+    max-http-form-post-size: 64KB
+  # Never send stack traces or exception messages to the browser.
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-exception: false
+    whitelabel:
+      enabled: false
+  servlet:
+    session:
+      # The API is stateless (JWT in a cookie). This only guarantees session ids never appear in URLs.
+      tracking-modes: cookie
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+
+pageturn:
+  cors:
+    # Browser origins allowed to call the API directly (comma-separated). In development the browser
+    # talks to the Vite dev server, which forwards requests, so CORS is not even used.
+    allowed-origins: ${PAGETURN_CORS_ALLOWED_ORIGINS:http://localhost:5177}
+  security:
+    jwt:
+      # Required. The app refuses to start without a random secret of at least 32 characters.
+      secret: ${PAGETURN_JWT_SECRET:}
+      session-ttl: PT8H
+      issuer: pageturn
+    # Session cookie is HttpOnly + SameSite=Strict, and Secure (HTTPS only) unless turned off here.
+    cookie-secure: ${PAGETURN_COOKIE_SECURE:true}
+    # BCrypt work factor for password hashes (each +1 doubles the cost). 12 ≈ 0.25 s per hash.
+    bcrypt-strength: 12
+  admin:
+    # Optional: create the first librarian account on startup (only if that email does not exist yet).
+    email: ${PAGETURN_ADMIN_EMAIL:}
+    password: ${PAGETURN_ADMIN_PASSWORD:}
+    name: ${PAGETURN_ADMIN_NAME:Head Librarian}
+  library:
+    loan-days: 14
+    max-active-loans-per-member: 5
+    # A book request with this many likes is approved automatically and added as "coming soon".
+    likes-to-stock: ${PAGETURN_LIKES_TO_STOCK:5}
+    # How many not-yet-decided book requests one member may have at a time (prevents spam).
+    max-open-requests-per-member: 5
+    # Brand-new accounts must wait this long before they can request or like books. Stops someone from
+    # creating a handful of fake accounts and instantly liking their own request into the catalogue.
+    min-account-age-for-requests: PT24H
+  http:
+    # Request bodies larger than this are rejected (413) before they are parsed.
+    max-request-bytes: 65536
+    # Exception: uploading a book cover picture (3 MB file + form overhead).
+    max-cover-upload-bytes: 3407872
+  rate-limit:
+    # Requests per minute from one IP address.
+    auth-per-minute: 10
+    api-per-minute: 300
+  login:
+    # After this many failed sign-ins for one email within the window, more attempts get 429.
+    max-failures: 5
+    failure-window: PT15M
