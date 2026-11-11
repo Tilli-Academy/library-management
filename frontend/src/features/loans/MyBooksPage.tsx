@@ -1,0 +1,73 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { BookMarked } from 'lucide-react'
+import { useState } from 'react'
+
+import { Badge, BookCover, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
+import { api, query } from '../../lib/api'
+import { dueLabel, formatDate } from '../../lib/format'
+import type { Loan, Page } from '../../lib/types'
+
+export function MyBooksPage() {
+  const [tab, setTab] = useState<'current' | 'history'>('current')
+  const [page, setPage] = useState(0)
+  const returned = tab === 'history'
+
+  const loans = useQuery({
+    queryKey: ['my-loans', { returned, page }],
+    queryFn: () => api.get<Page<Loan>>(`/me/loans${query({ returned, page, size: 20 })}`),
+    placeholderData: keepPreviousData,
+  })
+
+  return (
+    <>
+      <PageHeader title="My books" subtitle="What you're reading now, and everything you've borrowed before." />
+      <div className="mb-6 inline-flex rounded-xl bg-surface p-1 ring-1 ring-line" role="tablist">
+        {(['current', 'history'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
+            onClick={() => {
+              setTab(value)
+              setPage(0)
+            }}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${tab === value ? 'bg-brand-700 text-white' : 'text-ink-soft hover:bg-subtle'}`}
+          >
+            {value === 'current' ? 'Borrowed now' : 'History'}
+          </button>
+        ))}
+      </div>
+
+      {loans.isPending ? (
+        <Spinner />
+      ) : loans.isError ? (
+        <ErrorAlert error={loans.error} title="Couldn't load your books" />
+      ) : loans.data.items.length === 0 ? (
+        <EmptyState icon={<BookMarked className="size-6" aria-hidden />} title={returned ? 'No history yet' : 'No books borrowed'}>
+          {returned ? 'Books you return will be listed here.' : 'Find something in the catalogue and ask at the desk.'}
+        </EmptyState>
+      ) : (
+        <>
+          <ul className="space-y-3">
+            {loans.data.items.map((loan) => (
+              <li key={loan.id} className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-line">
+                <BookCover title={loan.bookTitle} className="h-20 w-14 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate font-display font-bold">{loan.bookTitle}</h2>
+                  <p className="truncate text-sm text-ink-soft">{loan.bookAuthor}</p>
+                  <p className="mt-1 text-xs text-ink-faint">
+                    Borrowed {formatDate(loan.issuedAt)}
+                    {loan.returnedAt ? ` · Returned ${formatDate(loan.returnedAt)}` : ` · Due ${formatDate(loan.dueAt)}`}
+                  </p>
+                </div>
+                {!loan.returnedAt && <Badge tone={loan.overdue ? 'red' : 'violet'}>{dueLabel(loan.dueAt)}</Badge>}
+              </li>
+            ))}
+          </ul>
+          <Pagination page={loans.data.page} totalPages={loans.data.totalPages} onChange={setPage} />
+        </>
+      )}
+    </>
+  )
+}
