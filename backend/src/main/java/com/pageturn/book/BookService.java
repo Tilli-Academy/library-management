@@ -30,8 +30,10 @@ public class BookService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<BookView> search(String query, boolean availableOnly, int page, int size) {
-        Page<Book> result = books.search(LikePatterns.contains(query), availableOnly,
+    public PageResponse<BookView> search(String query, boolean availableOnly, boolean comingSoonOnly, int page,
+            int size) {
+        Page<Book> result = books.search(LikePatterns.contains(query), availableOnly, comingSoonOnly,
+                BookStatus.COMING_SOON,
                 PageResponse.pageable(page, size, Sort.by("title", "id")));
         Map<Long, Instant> expectedBack = expectedBack(result.getContent());
         return PageResponse.of(result, book -> BookView.of(book, expectedBack.get(book.getId())));
@@ -49,9 +51,20 @@ public class BookService {
         if (isbn != null && books.existsByIsbn(isbn)) {
             throw ApiException.conflict("A book with this ISBN already exists.");
         }
-        Book book = new Book(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
-                TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
-                request.totalCopies());
+        Book book;
+        if (request.isComingSoon()) {
+            book = Book.comingSoon(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
+                    TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
+                    request.expectedArrival());
+        }
+        else {
+            if (request.totalCopies() < 1) {
+                throw ApiException.badRequest("A book in stock needs at least 1 copy.");
+            }
+            book = new Book(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
+                    TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
+                    request.totalCopies());
+        }
         return BookView.of(books.saveAndFlush(book), null);
     }
 
@@ -64,7 +77,7 @@ public class BookService {
         }
         book.setDetails(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
                 TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear());
-        book.changeTotalCopies(request.totalCopies());
+        book.changeStock(request.isComingSoon(), request.totalCopies(), request.expectedArrival());
         Book saved = books.saveAndFlush(book);
         return BookView.of(saved, expectedBack(List.of(saved)).get(id));
     }
@@ -82,7 +95,8 @@ public class BookService {
 
     /** Earliest due date of borrowed copies, only for books with no copy on the shelf (one query per page). */
     private Map<Long, Instant> expectedBack(List<Book> page) {
-        List<Long> soldOut = page.stream().filter(b -> b.getAvailableCopies() == 0).map(Book::getId).toList();
+        List<Long> soldOut = page.stream().filter(b -> b.getAvailableCopies() == 0 && !b.isComingSoon())
+                .map(Book::getId).toList();
         Map<Long, Instant> result = new HashMap<>();
         if (!soldOut.isEmpty()) {
             for (Object[] row : loans.earliestDueByBook(soldOut)) {

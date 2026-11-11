@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 import { Button, ErrorAlert, Modal, TextArea, TextField } from '../../components/ui'
 import { api, serverFieldError } from '../../lib/api'
@@ -15,17 +15,20 @@ function toForm(book?: Book): BookForm {
     genre: book?.genre ?? '',
     description: book?.description ?? '',
     publishedYear: book?.publishedYear ? String(book.publishedYear) : '',
-    totalCopies: String(book?.totalCopies ?? 1),
+    totalCopies: String(book && book.status !== 'COMING_SOON' ? book.totalCopies : 1),
+    comingSoon: book?.status === 'COMING_SOON',
+    expectedArrival: book?.expectedArrival ?? '',
   }
 }
 
 /** Add a new book, or edit an existing one (librarians only — the server enforces this too). */
 export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose: () => void; onSaved: (message: string) => void }) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, formState } = useForm<BookForm>({
+  const { register, handleSubmit, formState, control } = useForm<BookForm>({
     resolver: zodResolver(bookSchema),
     defaultValues: toForm(book),
   })
+  const comingSoon = useWatch({ control, name: 'comingSoon' })
 
   const save = useMutation({
     mutationFn: (form: BookForm) => {
@@ -36,7 +39,9 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
         genre: form.genre || null,
         description: form.description || null,
         publishedYear: form.publishedYear ? Number(form.publishedYear) : null,
-        totalCopies: Number(form.totalCopies),
+        totalCopies: form.comingSoon ? 0 : Number(form.totalCopies),
+        comingSoon: form.comingSoon,
+        expectedArrival: form.comingSoon && form.expectedArrival ? form.expectedArrival : null,
       }
       return book ? api.put<Book>(`/admin/books/${book.id}`, body) : api.post<Book>('/admin/books', body)
     },
@@ -58,14 +63,28 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
           <TextField label="ISBN (optional)" inputMode="numeric" {...register('isbn')} error={err('isbn')} maxLength={17} />
           <TextField label="Genre (optional)" {...register('genre')} error={err('genre')} maxLength={60} />
           <TextField label="Year (optional)" inputMode="numeric" {...register('publishedYear')} error={err('publishedYear')} maxLength={4} />
-          <TextField
-            label="Copies owned"
-            inputMode="numeric"
-            {...register('totalCopies')}
-            error={err('totalCopies')}
-            hint={book ? `${book.totalCopies - book.availableCopies} currently on loan` : undefined}
-          />
+          {comingSoon ? (
+            <TextField label="Expected arrival (optional)" type="date" {...register('expectedArrival')} error={err('expectedArrival')} />
+          ) : (
+            <TextField
+              label="Copies owned"
+              inputMode="numeric"
+              {...register('totalCopies')}
+              error={err('totalCopies')}
+              hint={book && book.status !== 'COMING_SOON' ? `${book.totalCopies - book.availableCopies} currently on loan` : undefined}
+            />
+          )}
         </div>
+        <label className="flex items-start gap-3 rounded-lg bg-subtle p-3 text-sm">
+          <input type="checkbox" className="mt-0.5 size-4 accent-brand-700" {...register('comingSoon')} />
+          <span>
+            <span className="font-semibold text-ink">Coming soon</span>
+            <span className="block text-ink-soft">
+              Show it in the catalogue before the copies arrive. Members can see it but can't borrow it yet. Untick
+              this and enter the number of copies when they arrive.
+            </span>
+          </span>
+        </label>
         <TextArea label="Description (optional)" rows={4} {...register('description')} error={err('description')} maxLength={2000} />
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>

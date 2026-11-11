@@ -22,6 +22,10 @@ export interface Book {
   availableCopies: number
   /** Only when no copy is on the shelf: when the first borrowed copy is due back. */
   expectedBackAt: string | null
+  /** COMING_SOON = announced, no copies yet (can't be borrowed). */
+  status: 'AVAILABLE' | 'COMING_SOON'
+  /** Optional date (yyyy-mm-dd) a coming-soon book is expected to arrive. */
+  expectedArrival: string | null
 }
 
 export interface Loan {
@@ -58,3 +62,24 @@ export interface Page<T> {
 }
 
 export type LoanStatus = 'ACTIVE' | 'OVERDUE' | 'RETURNED'
+
+export type SuggestionStatus = 'OPEN' | 'APPROVED' | 'DECLINED'
+
+/** A member's request for a book; at `likesNeeded` likes the library gets it. */
+export interface Suggestion {
+  id: number
+  title: string
+  author: string
+  note: string | null
+  status: SuggestionStatus
+  likeCount: number
+  likesNeeded: number
+  likedByMe: boolean
+  mine: boolean
+  /** Only visible to librarians. */
+  requestedByName: string | null
+  bookId: number | null
+  bookStatus: Book['status'] | null
+  createdAt: string
+  decidedAt: string | null
+}

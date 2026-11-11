@@ -43,6 +43,7 @@ services:
       PAGETURN_ADMIN_EMAIL: ${PAGETURN_ADMIN_EMAIL:-}
       PAGETURN_ADMIN_PASSWORD: ${PAGETURN_ADMIN_PASSWORD:-}
       PAGETURN_COOKIE_SECURE: ${PAGETURN_COOKIE_SECURE:-true}
+      PAGETURN_LIKES_TO_STOCK: ${PAGETURN_LIKES_TO_STOCK:-5}
       # The address people open in their browser. Browsers send it as the "Origin" of each change request;
       # only this origin is accepted (requests started from any other website are refused).
       PAGETURN_CORS_ALLOWED_ORIGINS: ${PAGETURN_PUBLIC_ORIGIN:-http://localhost:8098}

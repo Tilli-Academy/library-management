@@ -1,4 +1,4 @@
-import { BookMarked, BookOpen, LayoutDashboard, Library, LogOut, Repeat, Users } from 'lucide-react'
+import { BookMarked, BookOpen, LayoutDashboard, Library, Lightbulb, LogOut, Repeat, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
@@ -14,6 +14,7 @@ interface NavItem {
 const memberNav: NavItem[] = [
   { to: '/', label: 'Catalogue', icon: Library, end: true },
   { to: '/my-books', label: 'My books', icon: BookMarked },
+  { to: '/requests', label: 'Requests', icon: Lightbulb },
 ]
 
 const librarianNav: NavItem[] = [

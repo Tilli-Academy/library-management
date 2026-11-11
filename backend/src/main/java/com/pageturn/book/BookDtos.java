@@ -1,6 +1,7 @@
 package com.pageturn.book;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import com.pageturn.common.web.TextRules;
 
@@ -35,8 +36,16 @@ public final class BookDtos {
             @Min(value = 1000, message = "Enter a valid year.") @Max(value = 2100, message = "Enter a valid year.")
             Integer publishedYear,
             @NotNull(message = "Number of copies is required.")
-            @Min(value = 1, message = "At least 1 copy.") @Max(value = 1000, message = "At most 1000 copies.")
-            Integer totalCopies) {
+            @Min(value = 0, message = "Copies can't be negative.") @Max(value = 1000, message = "At most 1000 copies.")
+            Integer totalCopies,
+            /** true = announce the book as "coming soon" (no copies yet; totalCopies is ignored). */
+            Boolean comingSoon,
+            /** Optional, only used for coming-soon books. */
+            LocalDate expectedArrival) {
+
+        public boolean isComingSoon() {
+            return Boolean.TRUE.equals(comingSoon);
+        }
     }
 
     /**
@@ -44,12 +53,13 @@ public final class BookDtos {
      * i.e. when the book should be available again. May be in the past if that copy is overdue.
      */
     public record BookView(Long id, String isbn, String title, String author, String genre, String description,
-            Integer publishedYear, int totalCopies, int availableCopies, Instant expectedBackAt) {
+            Integer publishedYear, int totalCopies, int availableCopies, Instant expectedBackAt, BookStatus status,
+            LocalDate expectedArrival) {
 
         public static BookView of(Book book, Instant expectedBackAt) {
             return new BookView(book.getId(), book.getIsbn(), book.getTitle(), book.getAuthor(), book.getGenre(),
                     book.getDescription(), book.getPublishedYear(), book.getTotalCopies(), book.getAvailableCopies(),
-                    book.getAvailableCopies() > 0 ? null : expectedBackAt);
+                    book.getAvailableCopies() > 0 ? null : expectedBackAt, book.getStatus(), book.getExpectedArrival());
         }
     }
 }

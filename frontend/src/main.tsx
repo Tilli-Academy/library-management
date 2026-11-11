@@ -12,6 +12,7 @@ import { Layout } from './components/Layout'
 import { NotFound } from './components/NotFound'
 import { CatalogPage } from './features/catalog/CatalogPage'
 import { MyBooksPage } from './features/loans/MyBooksPage'
+import { RequestsPage } from './features/requests/RequestsPage'
 import { ApiError } from './lib/api'
 
 const queryClient = new QueryClient({
@@ -42,6 +43,7 @@ const router = createBrowserRouter(
           children: [
             { path: '/', element: <CatalogPage /> },
             { path: '/my-books', element: <MyBooksPage /> },
+            { path: '/requests', element: <RequestsPage /> },
             {
               element: <RequireLibrarian />,
               children: [

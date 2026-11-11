@@ -11,6 +11,7 @@ How PageTurn protects its users, and the results of the security review done dur
 | Sign-in | Session token in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie (JavaScript can't read it). Tokens are signed (HS256), expire after 8 hours, and are revoked on sign-out or when an account is blocked. |
 | Passwords | BCrypt (cost 12) with a salt per password. 12–72 characters. Same error and similar timing for "wrong email" and "wrong password". |
 | Personal data | Phone numbers are only visible to the member themselves and to librarians, never to other members. Members can only change their own number. Call links contain digits only. |
+| Book requests | One like per member per request (enforced by the database). Likes are counted under a row lock, so simultaneous likes can't be lost or add a book twice. At most 5 open requests per member. Members don't see who requested what; librarians do. |
 | Access control | Deny by default. Every request is checked on the server; role and "blocked" status are read from the database on every request. Librarian endpoints are checked twice (URL rule + method rule). Members can only ever see their own loans. |
 | First admin | Created only from `PAGETURN_ADMIN_EMAIL` / `PAGETURN_ADMIN_PASSWORD`. Sign-up always creates members; there is no "make me admin" endpoint. Librarians can't change themselves, and two librarians can't remove each other at the same moment. |
 | CSRF | Every change needs the `X-XSRF-TOKEN` header matching the `XSRF-TOKEN` cookie, plus SameSite=Strict cookies and an Origin allow-list. |

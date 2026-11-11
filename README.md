@@ -13,11 +13,17 @@ accounts can only sign in. They are created by the head librarian, so nobody can
 - Search the catalogue by title, author, genre or ISBN; filter to available books
 - See if a book is available, and if all copies are out, **when it is expected back** ("Expected back in 4 days")
 - "My books": current loans with due dates and overdue warnings, borrowing history, and their phone number
+- See **Coming soon** books (announced, not in stock yet), optionally with an expected arrival date
+- **Request a book** the library doesn't have, and **like** other members' requests. When a request reaches
+  `PAGETURN_LIKES_TO_STOCK` likes (default 5), it is approved automatically and the book appears in the
+  catalogue as "coming soon"
 
 **Librarians** (everything members can do, plus)
 - Dashboard: titles, copies, books on loan, overdue loans, members
 - Add, edit and delete books (ISBN check-digit validation, multiple copies per title)
 - Lend a copy to a member, mark loans returned; lists of active / overdue / returned loans (who borrowed, who returned)
+- Add books as **Coming soon** (with an optional arrival date); click **Copies arrived** to put them in stock
+- See all requests sorted by likes (with who asked), and **Get it** or **Decline** a request by hand
 - Overdue books on the dashboard with the member's phone: a **Call** button, and **Mark as called** so every
   librarian can see who was already contacted
 - Promote members to librarian, block and unblock accounts
@@ -77,7 +83,7 @@ For a real deployment, put HTTPS in front (a reverse proxy or your host's load b
 ## Tests
 
 ```bash
-cd backend && ./mvnw verify          # 51 tests, starts a throw-away PostgreSQL in Docker
+cd backend && ./mvnw verify          # 58 tests, starts a throw-away PostgreSQL in Docker
 cd frontend && npm run lint && npm test && npm run build
 ```
 
@@ -90,7 +96,7 @@ All endpoints are under `/api/v1`. Changes (`POST`/`PUT`/`PATCH`/`DELETE`) need 
 | Anyone | GET | `/auth/csrf` | Get the CSRF cookie |
 | Anyone | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Account and session |
 | Signed in | GET / PATCH | `/auth/me` | Current user / update your phone number |
-| Signed in | GET | `/books?q=&available=&page=&size=` | Search the catalogue |
+| Signed in | GET | `/books?q=&available=&comingSoon=&page=&size=` | Search the catalogue |
 | Signed in | GET | `/books/{id}` | One book |
 | Signed in | GET | `/me/loans?returned=` | Your own loans |
 | Librarian | POST / PUT / DELETE | `/admin/books`, `/admin/books/{id}` | Manage books |
@@ -98,6 +104,9 @@ All endpoints are under `/api/v1`. Changes (`POST`/`PUT`/`PATCH`/`DELETE`) need 
 | Librarian | POST | `/admin/loans/{id}/return` | Mark returned |
 | Librarian | POST | `/admin/loans/{id}/reminded` | Record that the member was called |
 | Librarian | GET | `/admin/stats` | Dashboard numbers |
+| Signed in | GET / POST | `/suggestions?status=`, `/suggestions` | List / create book requests |
+| Signed in | POST / DELETE | `/suggestions/{id}/like` | Like / un-like a request |
+| Librarian | POST | `/admin/suggestions/{id}/approve`, `/decline` | Decide a request by hand |
 | Librarian | GET / PATCH | `/admin/users`, `/admin/users/{id}` | Members, roles, blocking |
 
 Errors are returned as JSON "problem details": `{"status":409,"title":"Conflict","detail":"..."}`.

@@ -33,9 +33,14 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                 or lower(coalesce(b.genre, '')) like :pattern escape '\\'
                 or coalesce(b.isbn, '') like :pattern escape '\\')
               and (:availableOnly = false or b.availableCopies > 0)
+              and (:comingSoonOnly = false or b.status = :comingSoon)
             """)
     Page<Book> search(@Param("pattern") String pattern, @Param("availableOnly") boolean availableOnly,
+            @Param("comingSoonOnly") boolean comingSoonOnly, @Param("comingSoon") BookStatus comingSoon,
             Pageable pageable);
+
+    /** Is this title by this author already in the catalogue (ignoring upper/lower case)? */
+    java.util.Optional<Book> findFirstByTitleIgnoreCaseAndAuthorIgnoreCase(String title, String author);
 
     @Query("select coalesce(sum(b.totalCopies), 0) from Book b")
     long totalCopies();

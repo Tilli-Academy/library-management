@@ -33,8 +33,9 @@ public class BookController {
     @GetMapping("/api/v1/books")
     public PageResponse<BookView> search(@RequestParam(required = false) String q,
             @RequestParam(defaultValue = "false") boolean available,
+            @RequestParam(defaultValue = "false") boolean comingSoon,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
-        return bookService.search(q, available, page, size);
+        return bookService.search(q, available, comingSoon, page, size);
     }
 
     @GetMapping("/api/v1/books/{id}")

@@ -1,12 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Search, Trash2, UserRoundPlus } from 'lucide-react'
+import { PackageCheck, Pencil, Plus, Search, Trash2, UserRoundPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { useAuth } from '../../auth/AuthContext'
 import { Badge, BookCover, Button, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
 import { useToast } from '../../components/Toast'
 import { api, query } from '../../lib/api'
-import { expectedBackLabel } from '../../lib/format'
+import { expectedBackLabel, formatDate } from '../../lib/format'
 import type { Book, Page } from '../../lib/types'
 import { BookFormModal, IssueLoanModal } from './BookModals'
 
@@ -19,6 +19,14 @@ function useDebounced<T>(value: T, delay = 300): T {
   return debounced
 }
 
+type Filter = 'all' | 'available' | 'comingSoon'
+
+const filters: { label: string; value: Filter }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Available', value: 'available' },
+  { label: 'Coming soon', value: 'comingSoon' },
+]
+
 type Dialog = { kind: 'add' } | { kind: 'edit'; book: Book } | { kind: 'lend'; book: Book } | null
 
 export function CatalogPage() {
@@ -26,19 +34,22 @@ export function CatalogPage() {
   const queryClient = useQueryClient()
   const { toast, show } = useToast()
   const [search, setSearch] = useState('')
-  const [availableOnly, setAvailableOnly] = useState(false)
+  const [filter, setFilter] = useState<Filter>('all')
   const [dialog, setDialog] = useState<Dialog>(null)
   const q = useDebounced(search.trim())
 
   // The page number belongs to one search; a new search or filter starts again at page 1.
-  const searchKey = `${q}|${availableOnly}`
+  const searchKey = `${q}|${filter}`
   const [paging, setPaging] = useState({ key: searchKey, page: 0 })
   const page = paging.key === searchKey ? paging.page : 0
   const setPage = (next: number) => setPaging({ key: searchKey, page: next })
 
   const books = useQuery({
-    queryKey: ['books', { q, availableOnly, page }],
-    queryFn: () => api.get<Page<Book>>(`/books${query({ q, available: availableOnly || undefined, page, size: 12 })}`),
+    queryKey: ['books', { q, filter, page }],
+    queryFn: () =>
+      api.get<Page<Book>>(
+        `/books${query({ q, available: filter === 'available' || undefined, comingSoon: filter === 'comingSoon' || undefined, page, size: 12 })}`,
+      ),
     placeholderData: keepPreviousData,
   })
 
@@ -87,17 +98,14 @@ export function CatalogPage() {
           />
         </label>
         <div className="flex rounded-xl bg-surface p-1 ring-1 ring-line" role="group" aria-label="Filter">
-          {[
-            { label: 'All books', value: false },
-            { label: 'Available', value: true },
-          ].map((option) => (
+          {filters.map((option) => (
             <button
-              key={option.label}
+              key={option.value}
               type="button"
-              aria-pressed={availableOnly === option.value}
-              onClick={() => setAvailableOnly(option.value)}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap ${
-                availableOnly === option.value ? 'bg-brand-700 text-white' : 'text-ink-soft hover:bg-subtle'
+              aria-pressed={filter === option.value}
+              onClick={() => setFilter(option.value)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap ${
+                filter === option.value ? 'bg-brand-700 text-white' : 'text-ink-soft hover:bg-subtle'
               }`}
             >
               {option.label}
@@ -115,8 +123,8 @@ export function CatalogPage() {
       ) : books.isError ? (
         <ErrorAlert error={books.error} title="Couldn't load books" />
       ) : books.data.items.length === 0 ? (
-        <EmptyState title={q || availableOnly ? 'No books match' : 'The catalogue is empty'}>
-          {q || availableOnly
+        <EmptyState title={q || filter !== 'all' ? 'No books match' : 'The catalogue is empty'}>
+          {q || filter !== 'all'
             ? 'Try a different search or show all books.'
             : isLibrarian
               ? 'Add the first book to get started.'
@@ -133,7 +141,11 @@ export function CatalogPage() {
                 <BookCover title={book.title} className="h-32 w-22 shrink-0" />
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="mb-1">
-                    {book.availableCopies > 0 ? (
+                    {book.status === 'COMING_SOON' ? (
+                      <Badge tone="violet">
+                        Coming soon{book.expectedArrival ? ` · ${formatDate(book.expectedArrival)}` : ''}
+                      </Badge>
+                    ) : book.availableCopies > 0 ? (
                       <Badge tone="green">
                         {book.availableCopies} of {book.totalCopies} available
                       </Badge>
@@ -150,14 +162,20 @@ export function CatalogPage() {
                   </p>
                   {isLibrarian && (
                     <div className="mt-auto flex flex-wrap gap-1 pt-3">
-                      <Button
-                        variant="secondary"
-                        className="min-h-8 px-2.5 py-1 text-xs"
-                        disabled={book.availableCopies === 0}
-                        onClick={() => setDialog({ kind: 'lend', book })}
-                      >
-                        <UserRoundPlus className="size-3.5" aria-hidden /> Lend
-                      </Button>
+                      {book.status === 'COMING_SOON' ? (
+                        <Button variant="secondary" className="min-h-8 px-2.5 py-1 text-xs" onClick={() => setDialog({ kind: 'edit', book })}>
+                          <PackageCheck className="size-3.5" aria-hidden /> Copies arrived
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          className="min-h-8 px-2.5 py-1 text-xs"
+                          disabled={book.availableCopies === 0}
+                          onClick={() => setDialog({ kind: 'lend', book })}
+                        >
+                          <UserRoundPlus className="size-3.5" aria-hidden /> Lend
+                        </Button>
+                      )}
                       <Button variant="ghost" className="min-h-8 px-2 py-1" onClick={() => setDialog({ kind: 'edit', book })} aria-label={`Edit ${book.title}`}>
                         <Pencil className="size-3.5" aria-hidden />
                       </Button>

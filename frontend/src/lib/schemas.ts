@@ -72,16 +72,37 @@ export const bookSchema = z.object({
     .max(2000, 'Description must be at most 2000 characters.')
     .regex(MULTI_LINE, 'Description contains invalid characters.'),
   publishedYear: optionalYear,
-  totalCopies: z
+  totalCopies: z.string().trim(),
+  /** "Coming soon": announced but no copies yet. Then the number of copies isn't needed. */
+  comingSoon: z.boolean(),
+  expectedArrival: z
     .string()
     .trim()
-    .regex(/^\d{1,4}$/, 'Enter a whole number.')
-    .refine((value) => Number(value) >= 1 && Number(value) <= 1000, 'Between 1 and 1000 copies.'),
+    .refine((value) => value === '' || /^\d{4}-\d{2}-\d{2}$/.test(value), 'Enter a valid date.'),
+}).superRefine((form, ctx) => {
+  if (form.comingSoon) return
+  const copies = form.totalCopies
+  if (!/^\d{1,4}$/.test(copies)) {
+    ctx.addIssue({ code: 'custom', path: ['totalCopies'], message: 'Enter a whole number.' })
+  } else if (Number(copies) < 1 || Number(copies) > 1000) {
+    ctx.addIssue({ code: 'custom', path: ['totalCopies'], message: 'Between 1 and 1000 copies.' })
+  }
 })
 export type BookForm = z.infer<typeof bookSchema>
 
 export const profileSchema = z.object({ phone: phoneSchema })
 export type ProfileForm = z.infer<typeof profileSchema>
+
+export const suggestionSchema = z.object({
+  title: text('Title', 200).min(1, 'Title is required.'),
+  author: text('Author', 150).min(1, 'Author is required.'),
+  note: z
+    .string()
+    .trim()
+    .max(500, 'Note must be at most 500 characters.')
+    .regex(MULTI_LINE, 'Note contains invalid characters.'),
+})
+export type SuggestionForm = z.infer<typeof suggestionSchema>
 
 export const issueSchema = z.object({
   memberEmail: z.string().trim().min(1, 'Member email is required.').max(320).pipe(z.email('Enter a valid email address.')),

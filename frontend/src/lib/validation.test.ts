@@ -19,7 +19,7 @@ describe('safeRedirect', () => {
 })
 
 describe('form rules', () => {
-  const validBook = { title: 'Dune', author: 'Frank Herbert', isbn: '', genre: '', description: '', publishedYear: '', totalCopies: '2' }
+  const validBook = { title: 'Dune', author: 'Frank Herbert', isbn: '', genre: '', description: '', publishedYear: '', totalCopies: '2', comingSoon: false, expectedArrival: '' }
 
   it('accepts a normal book and trims spaces', () => {
     const result = bookSchema.parse({ ...validBook, title: '  Dune  ' })
@@ -39,6 +39,12 @@ describe('form rules', () => {
     expect(bookSchema.safeParse({ ...validBook, totalCopies: '0' }).success).toBe(false)
     expect(bookSchema.safeParse({ ...validBook, totalCopies: '1001' }).success).toBe(false)
     expect(bookSchema.safeParse({ ...validBook, publishedYear: '99' }).success).toBe(false)
+  })
+
+  it('does not need copies for a coming-soon book', () => {
+    expect(bookSchema.safeParse({ ...validBook, totalCopies: '0', comingSoon: true }).success).toBe(true)
+    expect(bookSchema.safeParse({ ...validBook, comingSoon: true, expectedArrival: '2026-12-15' }).success).toBe(true)
+    expect(bookSchema.safeParse({ ...validBook, comingSoon: true, expectedArrival: 'next week' }).success).toBe(false)
   })
 
   it('requires a strong, confirmed password', () => {

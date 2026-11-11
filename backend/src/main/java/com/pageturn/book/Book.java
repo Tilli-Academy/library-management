@@ -1,10 +1,14 @@
 package com.pageturn.book;
 
+import java.time.LocalDate;
+
 import com.pageturn.common.error.ApiException;
 import com.pageturn.common.persistence.TimestampedEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -46,6 +50,14 @@ public class Book extends TimestampedEntity {
     @Column(name = "available_copies", nullable = false)
     private int availableCopies;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private BookStatus status = BookStatus.AVAILABLE;
+
+    /** Optional, for coming-soon books: when the library expects the copies to arrive. */
+    @Column(name = "expected_arrival")
+    private LocalDate expectedArrival;
+
     protected Book() {
         // for JPA
     }
@@ -55,6 +67,42 @@ public class Book extends TimestampedEntity {
         setDetails(isbn, title, author, genre, description, publishedYear);
         this.totalCopies = totalCopies;
         this.availableCopies = totalCopies;
+    }
+
+    /** A book announced as "coming soon": in the catalogue, but no copies yet. */
+    public static Book comingSoon(String isbn, String title, String author, String genre, String description,
+            Integer publishedYear, LocalDate expectedArrival) {
+        Book book = new Book(isbn, title, author, genre, description, publishedYear, 0);
+        book.status = BookStatus.COMING_SOON;
+        book.expectedArrival = expectedArrival;
+        return book;
+    }
+
+    /**
+     * Switches between "coming soon" (no copies) and "in stock" (at least one copy).
+     * A book can't go back to "coming soon" while copies of it are borrowed.
+     */
+    public void changeStock(boolean comingSoon, int totalCopiesIfInStock, LocalDate expectedArrival) {
+        if (comingSoon) {
+            if (copiesOnLoan() > 0) {
+                throw ApiException.conflict("Copies of this book are on loan, so it can't be marked as coming soon.");
+            }
+            this.status = BookStatus.COMING_SOON;
+            this.totalCopies = 0;
+            this.availableCopies = 0;
+            this.expectedArrival = expectedArrival;
+            return;
+        }
+        if (totalCopiesIfInStock < 1) {
+            throw ApiException.badRequest("A book in stock needs at least 1 copy.");
+        }
+        changeTotalCopies(totalCopiesIfInStock);
+        this.status = BookStatus.AVAILABLE;
+        this.expectedArrival = null;
+    }
+
+    public boolean isComingSoon() {
+        return status == BookStatus.COMING_SOON;
     }
 
     public void setDetails(String isbn, String title, String author, String genre, String description,
@@ -82,6 +130,9 @@ public class Book extends TimestampedEntity {
     }
 
     public void takeCopy() {
+        if (status == BookStatus.COMING_SOON) {
+            throw ApiException.conflict("This book isn't in stock yet (coming soon).");
+        }
         if (availableCopies <= 0) {
             throw ApiException.conflict("No copies of this book are available right now.");
         }
@@ -129,5 +180,13 @@ public class Book extends TimestampedEntity {
 
     public int getAvailableCopies() {
         return availableCopies;
+    }
+
+    public BookStatus getStatus() {
+        return status;
+    }
+
+    public LocalDate getExpectedArrival() {
+        return expectedArrival;
     }
 }

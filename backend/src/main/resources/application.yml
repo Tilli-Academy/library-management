@@ -84,6 +84,10 @@ pageturn:
   library:
     loan-days: 14
     max-active-loans-per-member: 5
+    # A book request with this many likes is approved automatically and added as "coming soon".
+    likes-to-stock: ${PAGETURN_LIKES_TO_STOCK:5}
+    # How many not-yet-decided book requests one member may have at a time (prevents spam).
+    max-open-requests-per-member: 5
   http:
     # Request bodies larger than this are rejected (413) before they are parsed.
     max-request-bytes: 65536
