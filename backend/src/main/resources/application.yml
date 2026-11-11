@@ -41,6 +41,9 @@ server:
   # "none" in development. Set PAGETURN_FORWARD_HEADERS=native ONLY when running behind a trusted
   # reverse proxy (e.g. the nginx container), so rate limiting sees the real client IP.
   forward-headers-strategy: ${PAGETURN_FORWARD_HEADERS:none}
+  tomcat:
+    # Form posts are parsed by the server itself; keep them as small as every other request.
+    max-http-form-post-size: 64KB
   # Never send stack traces or exception messages to the browser.
   error:
     include-stacktrace: never
@@ -93,6 +96,9 @@ pageturn:
     likes-to-stock: ${PAGETURN_LIKES_TO_STOCK:5}
     # How many not-yet-decided book requests one member may have at a time (prevents spam).
     max-open-requests-per-member: 5
+    # Brand-new accounts must wait this long before they can request or like books. Stops someone from
+    # creating a handful of fake accounts and instantly liking their own request into the catalogue.
+    min-account-age-for-requests: PT24H
   http:
     # Request bodies larger than this are rejected (413) before they are parsed.
     max-request-bytes: 65536

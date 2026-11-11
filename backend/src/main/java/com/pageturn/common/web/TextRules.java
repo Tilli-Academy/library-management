@@ -21,12 +21,41 @@ public final class TextRules {
     private TextRules() {
     }
 
-    /** Trims, and turns blank text into null. */
+    /**
+     * Cleans multi-line text: unifies look-alike characters (Unicode NFKC, e.g. full-width letters), removes
+     * invisible formatting characters (zero-width spaces, right-to-left overrides…), trims, and turns blank
+     * text into null.
+     */
     public static String clean(String value) {
         if (value == null) {
             return null;
         }
-        String trimmed = value.strip();
-        return trimmed.isEmpty() ? null : trimmed;
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFKC)
+                .replaceAll("\\p{Cf}", "")
+                .strip();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    /**
+     * Cleans single-line text (titles, names): like {@link #clean}, and also turns any run of spaces
+     * (including non-breaking ones) into one normal space. So "Dune", " Dune " and "Du\u200Bne" can't be
+     * used to sneak past duplicate checks.
+     */
+    public static String cleanLine(String value) {
+        String cleaned = clean(value);
+        if (cleaned == null) {
+            return null;
+        }
+        String collapsed = cleaned.replaceAll("[\\s\\p{Z}]+", " ").strip();
+        return collapsed.isEmpty() ? null : collapsed;
+    }
+
+    /** For required fields: the cleaned value, or a clear error if nothing visible is left. */
+    public static String requiredLine(String value, String message) {
+        String cleaned = cleanLine(value);
+        if (cleaned == null) {
+            throw com.pageturn.common.error.ApiException.badRequest(message);
+        }
+        return cleaned;
     }
 }

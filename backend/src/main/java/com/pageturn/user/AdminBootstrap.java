@@ -59,7 +59,7 @@ public class AdminBootstrap implements ApplicationRunner {
             throw new IllegalStateException("PAGETURN_ADMIN_PASSWORD must be at least 12 characters.");
         }
         AuthService.checkPasswordLength(password);
-        String name = TextRules.clean(properties.name());
+        String name = TextRules.cleanLine(properties.name());
         users.save(new UserAccount(email, passwordEncoder.encode(password),
                 name == null ? "Head Librarian" : name, Role.LIBRARIAN));
         log.info("Created librarian account for the email in PAGETURN_ADMIN_EMAIL.");

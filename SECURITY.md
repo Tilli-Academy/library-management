@@ -11,16 +11,16 @@ How PageTurn protects its users, and the results of the security review done dur
 | Sign-in | Session token in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie (JavaScript can't read it). Tokens are signed (HS256), expire after 8 hours, and are revoked on sign-out or when an account is blocked. |
 | Passwords | BCrypt (cost 12) with a salt per password. 12–72 characters. Same error and similar timing for "wrong email" and "wrong password". |
 | Personal data | Phone numbers are only visible to the member themselves and to librarians, never to other members. Members can only change their own number. Call links contain digits only. |
-| Book requests | One like per member per request (enforced by the database). Likes are counted under a row lock, so simultaneous likes can't be lost or add a book twice. At most 5 open requests per member. Members don't see who requested what; librarians do. |
+| Book requests | Accounts must be 24 hours old to request or like (fake accounts can't be used instantly to push a book into the catalogue); the requester's note is never copied into the catalogue. One like per member per request (enforced by the database). Likes are counted under a row lock, so simultaneous likes can't be lost or add a book twice. At most 5 open requests per member. Members don't see who requested what; librarians do. |
 | Access control | Deny by default. Every request is checked on the server; role and "blocked" status are read from the database on every request. Librarian endpoints are checked twice (URL rule + method rule). Members can only ever see their own loans. |
 | First admin | Created only from `PAGETURN_ADMIN_EMAIL` / `PAGETURN_ADMIN_PASSWORD`. Sign-up always creates members; there is no "make me admin" endpoint. Librarians can't change themselves, and two librarians can't remove each other at the same moment. |
 | CSRF | Every change needs the `X-XSRF-TOKEN` header matching the `XSRF-TOKEN` cookie, plus SameSite=Strict cookies and an Origin allow-list. |
 | XSS | React escapes everything it shows; no `innerHTML`. Strict Content-Security-Policy (no inline or third-party scripts). The API only returns JSON. |
-| Input | Validated in the browser (Zod) and again on the server (Bean Validation) with length limits; invisible control characters are refused; ISBN check digits verified. The database has CHECK / UNIQUE / FOREIGN KEY rules too. |
+| Input | Validated in the browser (Zod) and again on the server (Bean Validation) with length limits; control characters are refused; text is normalised (Unicode NFKC), invisible formatting characters (zero-width, right-to-left overrides) are removed and repeated spaces collapsed, so look-alike duplicates can't sneak in; ISBN check digits verified. The database has CHECK / UNIQUE / FOREIGN KEY rules too. |
 | SQL injection | Only parameterised queries (Spring Data JPA); search wildcards are escaped. |
 | Rate limiting | Per IP: 10 sign-in/sign-up attempts and 300 API requests per minute. Per email: 5 failed sign-ins per 15 minutes. Attempts are counted before the password check, so parallel guesses count too. |
-| Request size | Bodies over 64 KB are refused before parsing — except the cover upload endpoint (3 MB). |
-| Picture uploads | Librarians only. The file must really decode as JPG/PNG (name and claimed type are ignored); huge dimensions are refused before decoding; it is shrunk to 600×900 and **redrawn as a brand-new JPEG**, which removes hidden data (scripts, camera/GPS metadata). Served as `image/jpeg` with `nosniff`, only to signed-in users. |
+| Request size | Bodies over 64 KB are refused before parsing — except `PUT` on the cover upload endpoint (3 MB). File uploads (multipart) anywhere else are refused (415) before the server parses them; the server's own form-post limit is 64 KB too. |
+| Picture uploads | Librarians only. The file must really decode as JPG/PNG (name and claimed type are ignored); pictures over 40 megapixels or 12000 px a side are refused before decoding; big pictures are decoded at reduced size; at most 2 are processed at once; it is shrunk to 600×900 and **redrawn as a brand-new JPEG**, which removes hidden data (scripts, camera/GPS metadata). Served as `image/jpeg` with `nosniff`, only to signed-in users. |
 | Headers | CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy no-referrer, Permissions-Policy, COOP. |
 | CORS | Exact origins only (wildcards are refused at startup). |
 | Errors & debug | No stack traces or internal messages sent to clients; SQL logging off; no H2 console; only `/actuator/health` exposed (no details); unknown paths denied; no source maps. |
@@ -44,6 +44,17 @@ Each finding was reproduced, fixed, and covered by an automated test where possi
 | 8 | Low | Parallel guesses could get past the 5-failure sign-in limit | Fixed: atomic reservation before the password check. Concurrency test. |
 | 9 | Info | Sign-out could look successful even when the server request failed | Fixed: the user stays signed in and is warned |
 | 10 | Info | Admin email already registered as a member caused a silent skip | Fixed: startup warning, never auto-promoted |
+
+### Second audit (after adding phone numbers, book requests, covers and the cover designer)
+
+Independent review found nothing Critical or High. All points below were reproduced or traced, fixed, and have regression tests.
+
+| # | Severity | Finding | Status |
+|---|---|---|---|
+| 11 | Medium | Fake accounts could like their own request to 5 and push spam text into the catalogue | Fixed: 24-hour account age to request/like; member notes no longer copied into books |
+| 12 | Low | A long, thin PNG (12000×1800) was decoded at full size (~173 MB of memory per upload) | Fixed: 40-megapixel cap, reduced-size decoding based on the larger side, max 2 decodes at once |
+| 13 | Low | Zero-width / right-to-left / non-breaking spaces bypassed duplicate checks | Fixed: text normalisation and invisible-character removal |
+| 14 | Low (direct access only) | Form or multipart bodies without a length could bypass the 64 KB limit | Fixed: multipart refused except `PUT` cover upload; server form limit 64 KB |
 
 ### Accepted risks
 

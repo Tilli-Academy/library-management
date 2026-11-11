@@ -37,6 +37,10 @@ final class CoverImages {
     private static final int MIN_SIDE = 50;
     /** Refuse absurd sizes before decoding ("decompression bomb" protection). */
     private static final int MAX_SIDE = 12_000;
+    /** At most 40 megapixels (a modern phone photo is ~12–48 MP). */
+    private static final long MAX_PIXELS = 40_000_000L;
+    /** Only this many pictures are decoded at the same moment, so parallel uploads can't exhaust memory. */
+    private static final java.util.concurrent.Semaphore DECODING = new java.util.concurrent.Semaphore(2);
     private static final String NOT_A_PICTURE = "This file isn't a valid JPG or PNG picture.";
 
     private CoverImages() {
@@ -46,6 +50,26 @@ final class CoverImages {
         if (upload == null || upload.length == 0) {
             throw ApiException.badRequest("Choose a picture to upload.");
         }
+        boolean acquired;
+        try {
+            acquired = DECODING.tryAcquire(15, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            acquired = false;
+        }
+        if (!acquired) {
+            throw ApiException.tooManyRequests("The server is busy processing pictures. Please try again in a moment.");
+        }
+        try {
+            return decodeAndRedraw(upload);
+        }
+        finally {
+            DECODING.release();
+        }
+    }
+
+    private static byte[] decodeAndRedraw(byte[] upload) {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(upload))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
             if (!readers.hasNext()) {
@@ -63,11 +87,12 @@ final class CoverImages {
                 if (width < MIN_SIDE || height < MIN_SIDE) {
                     throw ApiException.badRequest("The picture is too small (at least 50 × 50 pixels).");
                 }
-                if (width > MAX_SIDE || height > MAX_SIDE) {
-                    throw ApiException.badRequest("The picture is too large (at most 12000 pixels on a side).");
+                if (width > MAX_SIDE || height > MAX_SIDE || (long) width * height > MAX_PIXELS) {
+                    throw ApiException.badRequest("The picture is too large (at most 40 megapixels and 12000 pixels on a side).");
                 }
-                // Read only every n-th pixel of huge pictures, so memory use stays small.
-                int step = Math.max(1, (int) Math.floor(Math.min(width / (double) MAX_WIDTH, height / (double) MAX_HEIGHT)));
+                // Read only every n-th pixel of big pictures, chosen from the LARGER ratio, so even a very
+                // long, thin picture is decoded at roughly cover size (a few MB of memory at most).
+                int step = Math.max(1, (int) Math.floor(Math.max(width / (double) MAX_WIDTH, height / (double) MAX_HEIGHT)));
                 ImageReadParam param = reader.getDefaultReadParam();
                 param.setSourceSubsampling(step, step, 0, 0);
                 BufferedImage decoded = reader.read(0, param);

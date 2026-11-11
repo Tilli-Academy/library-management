@@ -47,8 +47,19 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        long maxBytes = COVER_UPLOAD.matcher(com.pageturn.common.web.RequestPaths.of(request)).matches()
-                ? coverMaxBytes : defaultMaxBytes;
+        boolean coverUpload = "PUT".equals(request.getMethod())
+                && COVER_UPLOAD.matcher(com.pageturn.common.web.RequestPaths.of(request)).matches();
+        String contentType = request.getContentType() == null ? "" : request.getContentType().toLowerCase(java.util.Locale.ROOT);
+        // File uploads (multipart) are accepted ONLY by the cover upload. Elsewhere they are refused before the
+        // server parses them (the server would otherwise read them into memory/disk on its own).
+        if (contentType.startsWith("multipart/") && !coverUpload) {
+            response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+            response.setContentType("application/problem+json");
+            response.getWriter().write("""
+                    {"type":"about:blank","title":"Unsupported Media Type","status":415,"detail":"File uploads are not accepted here."}""");
+            return;
+        }
+        long maxBytes = coverUpload ? coverMaxBytes : defaultMaxBytes;
         if (request.getContentLengthLong() > maxBytes) {
             response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
             response.setContentType("application/problem+json");

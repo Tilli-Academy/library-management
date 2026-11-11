@@ -42,8 +42,8 @@ public class AuthService {
             throw ApiException.conflict("An account with this email already exists.");
         }
         UserAccount user = new UserAccount(email, passwordEncoder.encode(request.password()),
-                TextRules.clean(request.displayName()), Role.MEMBER);
-        user.setPhone(TextRules.clean(request.phone()));
+                TextRules.requiredLine(request.displayName(), "Your name is required."), Role.MEMBER);
+        user.setPhone(TextRules.cleanLine(request.phone()));
         return users.saveAndFlush(user);
     }
 
@@ -68,7 +68,7 @@ public class AuthService {
     public UserAccount updateProfile(UUID userId, UserDtos.UpdateProfileRequest request) {
         UserAccount user = users.findById(userId)
                 .orElseThrow(() -> ApiException.unauthorized("Please sign in again."));
-        user.setPhone(TextRules.clean(request.phone()));
+        user.setPhone(TextRules.cleanLine(request.phone()));
         return users.saveAndFlush(user);
     }
 

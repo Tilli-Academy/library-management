@@ -62,6 +62,9 @@ public abstract class ApiTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn();
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+        // Test accounts are made "2 days old", so the 24-hour rule for book requests doesn't get in the way.
+        // (SuggestionApiTest checks that brand-new accounts ARE refused.)
+        jdbc.update("UPDATE users SET created_at = now() - interval '2 days' WHERE id = ?::uuid", id);
         return new TestUser(UUID.fromString(id), email, result.getResponse().getCookie(SessionCookies.NAME));
     }
 

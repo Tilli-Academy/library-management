@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "pageturn.library")
 public record LibraryProperties(int loanDays, int maxActiveLoansPerMember, int likesToStock,
-        int maxOpenRequestsPerMember) {
+        int maxOpenRequestsPerMember, java.time.Duration minAccountAgeForRequests) {
 
     public LibraryProperties {
         if (loanDays < 1 || loanDays > 365) {
@@ -18,6 +18,9 @@ public record LibraryProperties(int loanDays, int maxActiveLoansPerMember, int l
         }
         if (likesToStock < 1) {
             throw new IllegalStateException("pageturn.library.likes-to-stock must be at least 1.");
+        }
+        if (minAccountAgeForRequests == null || minAccountAgeForRequests.isNegative()) {
+            minAccountAgeForRequests = java.time.Duration.ofHours(24);
         }
         if (maxOpenRequestsPerMember < 1) {
             throw new IllegalStateException("pageturn.library.max-open-requests-per-member must be at least 1.");

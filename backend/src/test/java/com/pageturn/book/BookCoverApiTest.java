@@ -107,6 +107,41 @@ class BookCoverApiTest extends ApiTestSupport {
         mockMvc.perform(as(librarian, get("/api/v1/books/" + bookId))).andExpect(jsonPath("$.coverVersion").doesNotExist());
     }
 
+    /** 1 bit per pixel and highly compressible: a tiny file that claims a huge picture. */
+    private static byte[] blackAndWhite(int width, int height) throws Exception {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", out);
+        return out.toByteArray();
+    }
+
+    @Test
+    void hugePicturesAreRefusedAndLongThinOnesAreReadAtReducedSize() throws Exception {
+        TestUser librarian = librarian("cover-bomb");
+        Long bookId = createBook(librarian, "Bomb Proof", 1);
+        byte[] huge = blackAndWhite(8000, 6000); // 48 megapixels in a small file
+        assertThat(huge.length).isLessThan(3_000_000);
+        mockMvc.perform(as(librarian, upload(bookId, huge, "huge.png", "image/png")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("too large")));
+        // Very long and thin (the audit's memory trick): accepted, and decoded small instead of at full size.
+        mockMvc.perform(as(librarian, upload(bookId, blackAndWhite(12000, 1000), "long.png", "image/png")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void fileUploadsAreRefusedEverywhereExceptTheCoverUpload() throws Exception {
+        TestUser librarian = librarian("multipart");
+        Long bookId = createBook(librarian, "No Uploads Here", 1);
+        MockMultipartHttpServletRequestBuilder elsewhere = multipart(HttpMethod.POST, "/api/v1/suggestions");
+        elsewhere.file(new MockMultipartFile("file", "x.png", "image/png", picture("png", 100, 150)));
+        mockMvc.perform(as(librarian, elsewhere)).andExpect(status().isUnsupportedMediaType());
+        // Right path but wrong method: refused too.
+        MockMultipartHttpServletRequestBuilder wrongMethod = multipart(HttpMethod.POST, "/api/v1/admin/books/" + bookId + "/cover");
+        wrongMethod.file(new MockMultipartFile("file", "x.png", "image/png", picture("png", 100, 150)));
+        mockMvc.perform(as(librarian, wrongMethod)).andExpect(status().isUnsupportedMediaType());
+    }
+
     @Test
     void onlyLibrariansCanChangeCoversAndBigFilesAreRefused() throws Exception {
         TestUser librarian = librarian("cover-guard");

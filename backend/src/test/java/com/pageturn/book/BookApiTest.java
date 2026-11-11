@@ -102,6 +102,16 @@ class BookApiTest extends ApiTestSupport {
     }
 
     @Test
+    void textIsCleanedOfInvisibleCharactersAndExtraSpaces() throws Exception {
+        TestUser librarian = librarian("clean-text");
+        mockMvc.perform(as(librarian, post("/api/v1/admin/books")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"  Clean\u200b   Title\u00a0Here \u202e\",\"author\":\"Some\u2003Author\",\"totalCopies\":1}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Clean Title Here"))
+                .andExpect(jsonPath("$.author").value("Some Author"));
+    }
+
+    @Test
     void invalidBookDataGetsFieldErrors() throws Exception {
         TestUser librarian = librarian("invalid");
         mockMvc.perform(as(librarian, post("/api/v1/admin/books")).contentType(MediaType.APPLICATION_JSON)

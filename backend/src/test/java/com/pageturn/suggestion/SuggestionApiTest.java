@@ -127,6 +127,50 @@ class SuggestionApiTest extends ApiTestSupport {
     }
 
     @Test
+    void brandNewAccountsCannotRequestOrLikeSoFakeAccountsCannotStockBooks() throws Exception {
+        TestUser established = member("old-timer");
+        long id = request(established, "Needs Real Fans " + System.nanoTime());
+        TestUser fresh = member("fresh");
+        jdbc.update("UPDATE users SET created_at = now() WHERE id = ?", fresh.id()); // just signed up
+        mockMvc.perform(as(fresh, post("/api/v1/suggestions/" + id + "/like")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("New accounts can request and like books after 24 hours")));
+        mockMvc.perform(as(fresh, post("/api/v1/suggestions")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Spam Book\",\"author\":\"Spammer\"}"))
+                .andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT like_count FROM book_suggestions WHERE id = ?", Integer.class, id)).isEqualTo(1);
+    }
+
+    @Test
+    void approvedRequestsDoNotCopyTheMembersNoteIntoTheCatalogue() throws Exception {
+        TestUser librarian = librarian("note-check");
+        TestUser member = member("note-writer");
+        long id = request(member, "Note Book " + System.nanoTime()); // note is "Please!"
+        String body = mockMvc.perform(as(librarian, post("/api/v1/admin/suggestions/" + id + "/approve")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        Number bookId = JsonPath.read(body, "$.bookId");
+        mockMvc.perform(as(member, get("/api/v1/books/" + bookId))).andExpect(jsonPath("$.description").doesNotExist());
+    }
+
+    @Test
+    void invisibleCharactersAndExtraSpacesCannotSneakPastDuplicateChecks() throws Exception {
+        String title = "Sneaky Title " + System.nanoTime();
+        request(member("sneak-a"), title);
+        TestUser other = member("sneak-b");
+        for (String disguised : new String[] {title.replace(" ", "\u200b ") , "  " + title.replace(" ", "\u00a0\u00a0") + "\u202e"}) {
+            mockMvc.perform(as(other, post("/api/v1/suggestions")).contentType(MediaType.APPLICATION_JSON)
+                            .content(json("""
+                                    {"title":"%s","author":"Some Author"}""", disguised)))
+                    .andExpect(status().isConflict());
+        }
+        // A title made only of invisible characters is refused clearly (not a database error).
+        mockMvc.perform(as(other, post("/api/v1/suggestions")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"\u200b\u200b\",\"author\":\"Some Author\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Title is required."));
+    }
+
+    @Test
     void membersCanHaveAtMostFiveOpenRequests() throws Exception {
         TestUser member = member("eager");
         for (int i = 0; i < 5; i++) {

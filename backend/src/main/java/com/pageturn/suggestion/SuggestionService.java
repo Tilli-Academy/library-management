@@ -20,6 +20,7 @@ import com.pageturn.common.web.TextRules;
 import com.pageturn.loan.LibraryProperties;
 import com.pageturn.suggestion.SuggestionDtos.CreateSuggestionRequest;
 import com.pageturn.suggestion.SuggestionDtos.SuggestionView;
+import com.pageturn.user.UserAccount;
 import com.pageturn.user.UserRepository;
 
 /**
@@ -44,10 +45,12 @@ public class SuggestionService {
 
     @Transactional
     public SuggestionView create(CreateSuggestionRequest request, AuthenticatedUser current) {
-        String title = TextRules.clean(request.title());
-        String author = TextRules.clean(request.author());
+        String title = TextRules.requiredLine(request.title(), "Title is required.");
+        String author = TextRules.requiredLine(request.author(), "Author is required.");
         // Lock the member's row so the "max open requests" rule holds even for requests sent at the same moment.
-        users.findByIdForUpdate(current.id());
+        UserAccount member = users.findByIdForUpdate(current.id())
+                .orElseThrow(() -> ApiException.unauthorized("Please sign in again."));
+        requireEstablishedAccount(member);
         if (suggestions.countByRequestedByIdAndStatus(current.id(), SuggestionStatus.OPEN)
                 >= properties.maxOpenRequestsPerMember()) {
             throw ApiException.conflict("You already have " + properties.maxOpenRequestsPerMember()
@@ -71,6 +74,8 @@ public class SuggestionService {
 
     @Transactional
     public SuggestionView like(Long id, AuthenticatedUser current) {
+        requireEstablishedAccount(users.findById(current.id())
+                .orElseThrow(() -> ApiException.unauthorized("Please sign in again.")));
         Suggestion suggestion = lockOpen(id);
         Instant now = Instant.now();
         if (suggestions.addLike(id, current.id(), now) == 1) {
@@ -126,6 +131,23 @@ public class SuggestionService {
         return suggestion;
     }
 
+    /**
+     * Only accounts older than {@code min-account-age-for-requests} may request or like books. Librarians are
+     * trusted and exempt.
+     */
+    private void requireEstablishedAccount(UserAccount member) {
+        if (member.getRole() == com.pageturn.user.Role.LIBRARIAN) {
+            return;
+        }
+        java.time.Duration age = java.time.Duration.between(member.getCreatedAt(), Instant.now());
+        java.time.Duration needed = properties.minAccountAgeForRequests();
+        if (age.compareTo(needed) < 0) {
+            long hours = Math.max(1, needed.minus(age).toHours() + 1);
+            throw ApiException.forbidden("New accounts can request and like books after " + needed.toHours()
+                    + " hours. Please try again in about " + hours + " hour(s).");
+        }
+    }
+
     private void approveIfPopular(Suggestion suggestion, Instant now) {
         if (suggestion.getLikeCount() >= properties.likesToStock()) {
             approveNow(suggestion, now);
@@ -135,8 +157,9 @@ public class SuggestionService {
     /** Adds the book to the catalogue as "coming soon" (or links the existing entry if it's already there). */
     private void approveNow(Suggestion suggestion, Instant now) {
         Book book = books.findFirstByTitleIgnoreCaseAndAuthorIgnoreCase(suggestion.getTitle(), suggestion.getAuthor())
+                // The member's note is NOT copied into the book: only a librarian writes catalogue texts.
                 .orElseGet(() -> books.saveAndFlush(Book.comingSoon(null, suggestion.getTitle(), suggestion.getAuthor(),
-                        null, suggestion.getNote(), null, null)));
+                        null, null, null, null)));
         suggestion.approve(book, now);
     }
 

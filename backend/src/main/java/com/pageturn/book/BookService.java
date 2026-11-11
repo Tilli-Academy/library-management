@@ -53,16 +53,16 @@ public class BookService {
         }
         Book book;
         if (request.isComingSoon()) {
-            book = Book.comingSoon(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
-                    TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
+            book = Book.comingSoon(isbn, TextRules.requiredLine(request.title(), "Title is required."), TextRules.requiredLine(request.author(), "Author is required."),
+                    TextRules.cleanLine(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
                     request.expectedArrival());
         }
         else {
             if (request.totalCopies() < 1) {
                 throw ApiException.badRequest("A book in stock needs at least 1 copy.");
             }
-            book = new Book(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
-                    TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
+            book = new Book(isbn, TextRules.requiredLine(request.title(), "Title is required."), TextRules.requiredLine(request.author(), "Author is required."),
+                    TextRules.cleanLine(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
                     request.totalCopies());
         }
         book.setAboutAuthor(TextRules.clean(request.aboutAuthor()));
@@ -76,8 +76,8 @@ public class BookService {
         if (isbn != null && books.existsByIsbnAndIdNot(isbn, id)) {
             throw ApiException.conflict("Another book already has this ISBN.");
         }
-        book.setDetails(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
-                TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear());
+        book.setDetails(isbn, TextRules.requiredLine(request.title(), "Title is required."), TextRules.requiredLine(request.author(), "Author is required."),
+                TextRules.cleanLine(request.genre()), TextRules.clean(request.description()), request.publishedYear());
         book.setAboutAuthor(TextRules.clean(request.aboutAuthor()));
         book.changeStock(request.isComingSoon(), request.totalCopies(), request.expectedArrival());
         Book saved = books.saveAndFlush(book);
