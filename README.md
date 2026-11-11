@@ -3,17 +3,23 @@
 A full-stack library app: members browse the catalogue and track the books they borrowed; librarians
 manage books, lend and receive copies, and manage member accounts. Installable on phones as an app (PWA).
 
+The first screen asks **"I'm a librarian" or "I'm a member"**. Members can sign up themselves; librarian
+accounts can only sign in. They are created by the head librarian, so nobody can make themselves a librarian.
+
 ## Features
 
 **Members**
-- Sign up / sign in
+- Sign up (name, phone number, email, password) / sign in
 - Search the catalogue by title, author, genre or ISBN; filter to available books
-- "My books": current loans with due dates and overdue warnings, plus borrowing history
+- See if a book is available, and if all copies are out, **when it is expected back** ("Expected back in 4 days")
+- "My books": current loans with due dates and overdue warnings, borrowing history, and their phone number
 
 **Librarians** (everything members can do, plus)
 - Dashboard: titles, copies, books on loan, overdue loans, members
 - Add, edit and delete books (ISBN check-digit validation, multiple copies per title)
-- Lend a copy to a member, mark loans returned; lists of active / overdue / returned loans
+- Lend a copy to a member, mark loans returned; lists of active / overdue / returned loans (who borrowed, who returned)
+- Overdue books on the dashboard with the member's phone: a **Call** button, and **Mark as called** so every
+  librarian can see who was already contacted
 - Promote members to librarian, block and unblock accounts
 
 **Lending rules:** 14-day loans, at most 5 books per member, no new loans while a member has overdue books,
@@ -71,7 +77,7 @@ For a real deployment, put HTTPS in front (a reverse proxy or your host's load b
 ## Tests
 
 ```bash
-cd backend && ./mvnw verify          # 48 tests, starts a throw-away PostgreSQL in Docker
+cd backend && ./mvnw verify          # 51 tests, starts a throw-away PostgreSQL in Docker
 cd frontend && npm run lint && npm test && npm run build
 ```
 
@@ -83,13 +89,14 @@ All endpoints are under `/api/v1`. Changes (`POST`/`PUT`/`PATCH`/`DELETE`) need 
 |---|---|---|---|
 | Anyone | GET | `/auth/csrf` | Get the CSRF cookie |
 | Anyone | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Account and session |
-| Signed in | GET | `/auth/me` | Current user |
+| Signed in | GET / PATCH | `/auth/me` | Current user / update your phone number |
 | Signed in | GET | `/books?q=&available=&page=&size=` | Search the catalogue |
 | Signed in | GET | `/books/{id}` | One book |
 | Signed in | GET | `/me/loans?returned=` | Your own loans |
 | Librarian | POST / PUT / DELETE | `/admin/books`, `/admin/books/{id}` | Manage books |
 | Librarian | GET / POST | `/admin/loans?status=`, `/admin/loans` | List / lend |
 | Librarian | POST | `/admin/loans/{id}/return` | Mark returned |
+| Librarian | POST | `/admin/loans/{id}/reminded` | Record that the member was called |
 | Librarian | GET | `/admin/stats` | Dashboard numbers |
 | Librarian | GET / PATCH | `/admin/users`, `/admin/users/{id}` | Members, roles, blocking |
 

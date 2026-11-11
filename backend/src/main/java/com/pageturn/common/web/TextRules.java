@@ -15,6 +15,9 @@ public final class TextRules {
     /** Multi-line text: line breaks and tabs allowed, other control characters refused. */
     public static final String MULTI_LINE = "^[^\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]*$";
 
+    /** Phone number: digits, optional leading +, spaces, dashes, brackets. Same rule as the database. */
+    public static final String PHONE = "^\\+?[0-9][0-9 ()-]{5,18}$";
+
     private TextRules() {
     }
 

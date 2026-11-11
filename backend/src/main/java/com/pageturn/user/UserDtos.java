@@ -27,7 +27,10 @@ public final class UserDtos {
             @Size(min = 12, max = 72, message = "Password must be 12 to 72 characters.") String password,
             @NotBlank(message = "Your name is required.")
             @Size(max = 100, message = "Name must be at most 100 characters.")
-            @Pattern(regexp = TextRules.SINGLE_LINE, message = "Name contains invalid characters.") String displayName) {
+            @Pattern(regexp = TextRules.SINGLE_LINE, message = "Name contains invalid characters.") String displayName,
+            @NotBlank(message = "Phone number is required, so the library can contact you about your books.")
+            @Pattern(regexp = TextRules.PHONE, message = "Enter a valid phone number, e.g. +91 98765 43210.")
+            String phone) {
 
         @Override
         public String toString() {
@@ -45,15 +48,23 @@ public final class UserDtos {
         }
     }
 
+    /** What users may change about themselves. */
+    public record UpdateProfileRequest(
+            @NotBlank(message = "Phone number is required.")
+            @Pattern(regexp = TextRules.PHONE, message = "Enter a valid phone number, e.g. +91 98765 43210.")
+            String phone) {
+    }
+
     /** What a librarian may change about another user. Both fields optional. */
     public record UpdateUserRequest(Role role, Boolean enabled) {
     }
 
     /** A user as shown to themselves or to a librarian. Never includes the password hash. */
-    public record UserView(UUID id, String email, String displayName, Role role, boolean enabled, Instant createdAt) {
+    public record UserView(UUID id, String email, String displayName, String phone, Role role, boolean enabled,
+            Instant createdAt) {
 
         public static UserView of(UserAccount user) {
-            return new UserView(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
+            return new UserView(user.getId(), user.getEmail(), user.getDisplayName(), user.getPhone(), user.getRole(),
                     user.isEnabled(), user.getCreatedAt());
         }
     }

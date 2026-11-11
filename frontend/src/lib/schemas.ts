@@ -26,9 +26,17 @@ export const loginSchema = z.object({
 })
 export type LoginForm = z.infer<typeof loginSchema>
 
+// Same rule as the server: digits, optional leading +, spaces, dashes, brackets.
+export const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, 'Phone number is required, so the library can contact you about your books.')
+  .regex(/^\+?[0-9][0-9 ()-]{5,18}$/, 'Enter a valid phone number, e.g. +91 98765 43210.')
+
 export const registerSchema = z
   .object({
     displayName: text('Name', 100).min(1, 'Your name is required.'),
+    phone: phoneSchema,
     email: z.string().trim().min(1, 'Email is required.').max(320, 'Email is too long.').pipe(z.email('Enter a valid email address.')),
     password: z
       .string()
@@ -71,6 +79,9 @@ export const bookSchema = z.object({
     .refine((value) => Number(value) >= 1 && Number(value) <= 1000, 'Between 1 and 1000 copies.'),
 })
 export type BookForm = z.infer<typeof bookSchema>
+
+export const profileSchema = z.object({ phone: phoneSchema })
+export type ProfileForm = z.infer<typeof profileSchema>
 
 export const issueSchema = z.object({
   memberEmail: z.string().trim().min(1, 'Member email is required.').max(320).pipe(z.email('Enter a valid email address.')),

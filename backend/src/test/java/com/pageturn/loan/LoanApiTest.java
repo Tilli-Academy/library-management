@@ -122,6 +122,50 @@ class LoanApiTest extends ApiTestSupport {
     }
 
     @Test
+    void membersSeeWhenASoldOutBookIsExpectedBack() throws Exception {
+        TestUser librarian = librarian("expected");
+        TestUser first = member("first");
+        TestUser second = member("second");
+        Long bookId = createBook(librarian, "Waiting list book", 2);
+        mockMvc.perform(as(first, get("/api/v1/books/" + bookId))).andExpect(jsonPath("$.expectedBackAt").doesNotExist());
+
+        Long earlier = issue(librarian, bookId, first);
+        issue(librarian, bookId, second);
+        jdbc.update("UPDATE loans SET due_at = now() + interval '3 days' WHERE id = ?", earlier);
+
+        String body = mockMvc.perform(as(second, get("/api/v1/books/" + bookId)))
+                .andExpect(jsonPath("$.availableCopies").value(0))
+                .andReturn().getResponse().getContentAsString();
+        java.time.Instant expected = java.time.Instant.parse(com.jayway.jsonpath.JsonPath.read(body, "$.expectedBackAt"));
+        // The EARLIEST due date of the borrowed copies (3 days), not the later one (14 days).
+        assertThat(expected).isBetween(java.time.Instant.now().plus(java.time.Duration.ofDays(2)),
+                java.time.Instant.now().plus(java.time.Duration.ofDays(4)));
+        mockMvc.perform(as(second, get("/api/v1/books")).param("q", "Waiting list book"))
+                .andExpect(jsonPath("$.items[0].expectedBackAt").exists());
+    }
+
+    @Test
+    void librariansSeeThePhoneNumberAndCanRecordThatTheyCalled() throws Exception {
+        TestUser librarian = librarian("caller");
+        TestUser member = member("late-reader");
+        Long loanId = issue(librarian, createBook(librarian, "Call me back", 1), member);
+        jdbc.update("UPDATE loans SET issued_at = now() - interval '20 days', due_at = now() - interval '3 days' WHERE id = ?",
+                loanId);
+
+        mockMvc.perform(as(librarian, get("/api/v1/admin/loans")).param("status", "OVERDUE"))
+                .andExpect(jsonPath("$.items[?(@.id == " + loanId + ")].memberPhone").value(org.hamcrest.Matchers.hasItem("+91 98765 43210")))
+                .andExpect(jsonPath("$.items[?(@.id == " + loanId + ")].lastRemindedAt").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.nullValue())));
+        mockMvc.perform(as(librarian, post("/api/v1/admin/loans/" + loanId + "/reminded")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lastRemindedAt").exists());
+        // Members can't use it.
+        mockMvc.perform(as(member, post("/api/v1/admin/loans/" + loanId + "/reminded"))).andExpect(status().isForbidden());
+        // Not for returned books.
+        mockMvc.perform(as(librarian, post("/api/v1/admin/loans/" + loanId + "/return"))).andExpect(status().isOk());
+        mockMvc.perform(as(librarian, post("/api/v1/admin/loans/" + loanId + "/reminded"))).andExpect(status().isConflict());
+    }
+
+    @Test
     void theLastCopyCannotBeLentTwiceAtTheSameMoment() throws Exception {
         TestUser librarian = librarian("race");
         Long bookId = createBook(librarian, "Last copy", 1);

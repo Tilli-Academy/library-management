@@ -3,14 +3,15 @@ import type { ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo } from 'react'
 
 import { api, ApiError, setUnauthorizedHandler } from '../lib/api'
-import type { User } from '../lib/types'
+import type { Role, User } from '../lib/types'
 
 interface AuthState {
   user: User | null
   isLoading: boolean
   isLibrarian: boolean
-  signIn: (email: string, password: string) => Promise<User>
-  signUp: (displayName: string, email: string, password: string) => Promise<User>
+  signIn: (email: string, password: string, expectedRole?: Role) => Promise<User>
+  signUp: (displayName: string, phone: string, email: string, password: string) => Promise<User>
+  updatePhone: (phone: string) => Promise<User>
   signOut: () => Promise<void>
 }
 
@@ -45,8 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [resetSession])
 
   const signIn = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, expectedRole?: Role) => {
       const user = await api.post<User>('/auth/login', { email, password })
+      if (expectedRole === 'LIBRARIAN' && user.role !== 'LIBRARIAN') {
+        // Signed in from the librarian door with a member account: end that session again and explain.
+        await api.post('/auth/logout').catch(() => undefined)
+        throw new ApiError(403, 'This is a member account, not a librarian account. Use "I\'m a member" instead, or ask the head librarian for librarian access.')
+      }
       resetSession(user)
       return user
     },
@@ -54,12 +60,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const signUp = useCallback(
-    async (displayName: string, email: string, password: string) => {
-      const user = await api.post<User>('/auth/register', { displayName, email, password })
+    async (displayName: string, phone: string, email: string, password: string) => {
+      const user = await api.post<User>('/auth/register', { displayName, phone, email, password })
       resetSession(user)
       return user
     },
     [resetSession],
+  )
+
+  const updatePhone = useCallback(
+    async (phone: string) => {
+      const user = await api.patch<User>('/auth/me', { phone })
+      queryClient.setQueryData(ME_KEY, user)
+      return user
+    },
+    [queryClient],
   )
 
   /**
@@ -83,9 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLibrarian: me.data?.role === 'LIBRARIAN',
       signIn,
       signUp,
+      updatePhone,
       signOut,
     }),
-    [me.data, me.isPending, signIn, signUp, signOut],
+    [me.data, me.isPending, signIn, signUp, updatePhone, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

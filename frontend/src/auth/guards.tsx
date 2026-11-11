@@ -12,7 +12,7 @@ export function RequireAuth() {
   const { user, isLoading } = useAuth()
   const location = useLocation()
   if (isLoading) return <Spinner />
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (!user) return <Navigate to="/welcome" replace state={{ from: location.pathname }} />
   return <Outlet />
 }
 
@@ -29,6 +29,11 @@ export function RedirectIfSignedIn() {
   const { user, isLoading } = useAuth()
   const location = useLocation()
   if (isLoading) return <Spinner />
-  if (user) return <Navigate to={safeRedirect((location.state as { from?: unknown } | null)?.from)} replace />
+  if (user) {
+    const from = (location.state as { from?: unknown } | null)?.from
+    // No specific page requested: librarians start at their dashboard, members at the catalogue.
+    const fallback = user.role === 'LIBRARIAN' ? '/admin' : '/'
+    return <Navigate to={from === undefined || from === '/' ? fallback : safeRedirect(from)} replace />
+  }
   return <Outlet />
 }

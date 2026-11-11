@@ -1,5 +1,7 @@
 package com.pageturn.book;
 
+import java.time.Instant;
+
 import com.pageturn.common.web.TextRules;
 
 import jakarta.validation.constraints.Max;
@@ -37,12 +39,17 @@ public final class BookDtos {
             Integer totalCopies) {
     }
 
+    /**
+     * {@code expectedBackAt}: only when no copy is on the shelf — the earliest due date of the borrowed copies,
+     * i.e. when the book should be available again. May be in the past if that copy is overdue.
+     */
     public record BookView(Long id, String isbn, String title, String author, String genre, String description,
-            Integer publishedYear, int totalCopies, int availableCopies) {
+            Integer publishedYear, int totalCopies, int availableCopies, Instant expectedBackAt) {
 
-        public static BookView of(Book book) {
+        public static BookView of(Book book, Instant expectedBackAt) {
             return new BookView(book.getId(), book.getIsbn(), book.getTitle(), book.getAuthor(), book.getGenre(),
-                    book.getDescription(), book.getPublishedYear(), book.getTotalCopies(), book.getAvailableCopies());
+                    book.getDescription(), book.getPublishedYear(), book.getTotalCopies(), book.getAvailableCopies(),
+                    book.getAvailableCopies() > 0 ? null : expectedBackAt);
         }
     }
 }

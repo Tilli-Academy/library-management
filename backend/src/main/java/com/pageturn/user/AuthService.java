@@ -41,8 +41,10 @@ public class AuthService {
         if (users.existsByEmail(email)) {
             throw ApiException.conflict("An account with this email already exists.");
         }
-        return users.saveAndFlush(new UserAccount(email, passwordEncoder.encode(request.password()),
-                TextRules.clean(request.displayName()), Role.MEMBER));
+        UserAccount user = new UserAccount(email, passwordEncoder.encode(request.password()),
+                TextRules.clean(request.displayName()), Role.MEMBER);
+        user.setPhone(TextRules.clean(request.phone()));
+        return users.saveAndFlush(user);
     }
 
     @Transactional(readOnly = true)
@@ -59,6 +61,15 @@ public class AuthService {
         }
         loginLimiter.recordSuccess(email);
         return user.get();
+    }
+
+    /** Users can update their own phone number (only their own: the id comes from the session). */
+    @Transactional
+    public UserAccount updateProfile(UUID userId, UserDtos.UpdateProfileRequest request) {
+        UserAccount user = users.findById(userId)
+                .orElseThrow(() -> ApiException.unauthorized("Please sign in again."));
+        user.setPhone(TextRules.clean(request.phone()));
+        return users.saveAndFlush(user);
     }
 
     /** Signs the user out everywhere: every token issued so far stops working. */

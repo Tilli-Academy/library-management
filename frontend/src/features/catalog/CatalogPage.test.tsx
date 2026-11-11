@@ -12,7 +12,7 @@ const xssTitle = '<img src=x onerror="window.hacked=true"><script>window.hacked=
 function mockServer(user: User) {
   const books: Page<Book> = {
     items: [
-      { id: 1, isbn: null, title: xssTitle, author: 'Mallory', genre: null, description: null, publishedYear: null, totalCopies: 2, availableCopies: 1 },
+      { id: 1, isbn: null, title: xssTitle, author: 'Mallory', genre: null, description: null, publishedYear: null, totalCopies: 2, availableCopies: 1, expectedBackAt: null },
     ],
     page: 0,
     size: 12,
@@ -39,7 +39,7 @@ function renderPage() {
   )
 }
 
-const member: User = { id: 'u1', email: 'm@example.com', displayName: 'Mia Member', role: 'MEMBER', enabled: true, createdAt: '2026-01-01T00:00:00Z' }
+const member: User = { id: 'u1', email: 'm@example.com', displayName: 'Mia Member', phone: '0123456789', role: 'MEMBER', enabled: true, createdAt: '2026-01-01T00:00:00Z' }
 
 describe('CatalogPage', () => {
   it('shows a malicious title as plain text and never runs it', async () => {

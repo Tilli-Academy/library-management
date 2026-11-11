@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -82,6 +83,13 @@ public class AuthController {
             }
         }
         sessionCookies.clear(response);
+    }
+
+    /** PATCH /api/v1/auth/me — update your own phone number. */
+    @PatchMapping("/me")
+    public UserView updateMe(@AuthenticationPrincipal AuthenticatedUser current,
+            @Valid @RequestBody UserDtos.UpdateProfileRequest request) {
+        return UserView.of(authService.updateProfile(current.id(), request));
     }
 
     /** GET /api/v1/auth/me — the signed-in user (401 when not signed in). */

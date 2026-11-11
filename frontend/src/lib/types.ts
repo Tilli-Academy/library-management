@@ -4,6 +4,7 @@ export interface User {
   id: string
   email: string
   displayName: string
+  phone: string | null
   role: Role
   enabled: boolean
   createdAt: string
@@ -19,6 +20,8 @@ export interface Book {
   publishedYear: number | null
   totalCopies: number
   availableCopies: number
+  /** Only when no copy is on the shelf: when the first borrowed copy is due back. */
+  expectedBackAt: string | null
 }
 
 export interface Loan {
@@ -29,9 +32,11 @@ export interface Loan {
   memberId: string
   memberName: string
   memberEmail: string
+  memberPhone: string | null
   issuedAt: string
   dueAt: string
   returnedAt: string | null
+  lastRemindedAt: string | null
   overdue: boolean
 }
 

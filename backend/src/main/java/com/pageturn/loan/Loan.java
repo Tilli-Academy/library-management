@@ -47,6 +47,10 @@ public class Loan {
     @Column(name = "returned_at")
     private Instant returnedAt;
 
+    /** When a librarian last contacted the member about this loan (e.g. called about an overdue book). */
+    @Column(name = "last_reminded_at")
+    private Instant lastRemindedAt;
+
     protected Loan() {
         // for JPA
     }
@@ -65,6 +69,14 @@ public class Loan {
 
     public boolean isOverdue(Instant now) {
         return returnedAt == null && dueAt.isBefore(now);
+    }
+
+    void markReminded(Instant when) {
+        this.lastRemindedAt = when;
+    }
+
+    public Instant getLastRemindedAt() {
+        return lastRemindedAt;
     }
 
     void markReturned(Instant when) {

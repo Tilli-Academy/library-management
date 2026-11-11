@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
 import { AuthProvider } from './auth/AuthContext'
-import { LoginPage, RegisterPage } from './auth/AuthPages'
+import { LoginPage, RegisterPage, WelcomePage } from './auth/AuthPages'
 import { RedirectIfSignedIn, RequireAuth, RequireLibrarian } from './auth/guards'
 import { Layout } from './components/Layout'
 import { NotFound } from './components/NotFound'
@@ -29,6 +29,7 @@ const router = createBrowserRouter(
     {
       element: <RedirectIfSignedIn />,
       children: [
+        { path: '/welcome', element: <WelcomePage /> },
         { path: '/login', element: <LoginPage /> },
         { path: '/register', element: <RegisterPage /> },
       ],

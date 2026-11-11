@@ -1,10 +1,14 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { BookMarked } from 'lucide-react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 
-import { Badge, BookCover, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
-import { api, query } from '../../lib/api'
+import { useAuth } from '../../auth/AuthContext'
+import { Badge, BookCover, Button, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner, TextField } from '../../components/ui'
+import { api, query, serverFieldError } from '../../lib/api'
 import { dueLabel, formatDate } from '../../lib/format'
+import { profileSchema, type ProfileForm } from '../../lib/schemas'
 import type { Loan, Page } from '../../lib/types'
 
 export function MyBooksPage() {
@@ -21,6 +25,7 @@ export function MyBooksPage() {
   return (
     <>
       <PageHeader title="My books" subtitle="What you're reading now, and everything you've borrowed before." />
+      <PhoneCard />
       <div className="mb-6 inline-flex rounded-xl bg-surface p-1 ring-1 ring-line" role="tablist">
         {(['current', 'history'] as const).map((value) => (
           <button
@@ -69,5 +74,70 @@ export function MyBooksPage() {
         </>
       )}
     </>
+  )
+}
+
+/** The member's phone number, which the library uses to remind them about overdue books. */
+function PhoneCard() {
+  const { user, updatePhone } = useAuth()
+  const [editing, setEditing] = useState(!user?.phone)
+  const [error, setError] = useState<unknown>(null)
+  const { register, handleSubmit, formState } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { phone: user?.phone ?? '' },
+  })
+
+  const onSubmit = handleSubmit(async (form) => {
+    setError(null)
+    try {
+      await updatePhone(form.phone)
+      setEditing(false)
+    } catch (e) {
+      setError(e)
+    }
+  })
+
+  if (!editing) {
+    return (
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-surface p-4 text-sm ring-1 ring-line">
+        <span className="text-ink-soft">
+          The library will call <strong className="text-ink">{user?.phone}</strong> if a book is overdue.
+        </span>
+        <Button variant="ghost" onClick={() => setEditing(true)}>
+          Change number
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <form onSubmit={onSubmit} noValidate className="mb-6 space-y-3 rounded-2xl bg-surface p-4 ring-1 ring-line">
+      {!user?.phone && (
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+          Please add your phone number, so the library can reach you about your books.
+        </p>
+      )}
+      <ErrorAlert error={error} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="flex-1">
+          <TextField
+            label="Phone number"
+            type="tel"
+            autoComplete="tel"
+            {...register('phone')}
+            error={formState.errors.phone?.message ?? serverFieldError(error, 'phone')}
+          />
+        </div>
+        <div className="flex gap-2 sm:pt-6">
+          <Button type="submit" loading={formState.isSubmitting}>
+            Save
+          </Button>
+          {user?.phone && (
+            <Button variant="secondary" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          )}
+        </div>
+      </div>
+    </form>
   )
 }

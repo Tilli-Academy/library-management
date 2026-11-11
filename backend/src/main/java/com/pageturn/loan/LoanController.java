@@ -61,6 +61,13 @@ public class LoanController {
         return loanService.returnLoan(id);
     }
 
+    /** POST /api/v1/admin/loans/{id}/reminded — "I called this member about the book". */
+    @PostMapping("/api/v1/admin/loans/{id}/reminded")
+    @PreAuthorize("hasRole('LIBRARIAN')")
+    public LoanView markReminded(@PathVariable Long id) {
+        return loanService.markReminded(id);
+    }
+
     @GetMapping("/api/v1/admin/stats")
     @PreAuthorize("hasRole('LIBRARIAN')")
     public LibraryStats stats() {

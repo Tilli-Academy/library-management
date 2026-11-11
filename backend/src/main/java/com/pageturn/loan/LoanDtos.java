@@ -24,14 +24,14 @@ public final class LoanDtos {
     }
 
     public record LoanView(Long id, Long bookId, String bookTitle, String bookAuthor, UUID memberId,
-            String memberName, String memberEmail, Instant issuedAt, Instant dueAt, Instant returnedAt,
-            boolean overdue) {
+            String memberName, String memberEmail, String memberPhone, Instant issuedAt, Instant dueAt,
+            Instant returnedAt, Instant lastRemindedAt, boolean overdue) {
 
         public static LoanView of(Loan loan, Instant now) {
             return new LoanView(loan.getId(), loan.getBook().getId(), loan.getBook().getTitle(),
                     loan.getBook().getAuthor(), loan.getMember().getId(), loan.getMember().getDisplayName(),
-                    loan.getMember().getEmail(), loan.getIssuedAt(), loan.getDueAt(), loan.getReturnedAt(),
-                    loan.isOverdue(now));
+                    loan.getMember().getEmail(), loan.getMember().getPhone(), loan.getIssuedAt(), loan.getDueAt(),
+                    loan.getReturnedAt(), loan.getLastRemindedAt(), loan.isOverdue(now));
         }
     }
 

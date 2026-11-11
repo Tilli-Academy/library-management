@@ -95,7 +95,10 @@ export function UsersPage() {
                       {!user.enabled && <Badge tone="red">Blocked</Badge>}
                       {isMe && <Badge tone="slate">You</Badge>}
                     </div>
-                    <p className="truncate text-sm text-ink-soft">{user.email}</p>
+                    <p className="truncate text-sm text-ink-soft">
+                      {user.email}
+                      {user.phone && ` · ${user.phone}`}
+                    </p>
                     <p className="text-xs text-ink-faint">Joined {formatDate(user.createdAt)}</p>
                   </div>
                   {!isMe && (

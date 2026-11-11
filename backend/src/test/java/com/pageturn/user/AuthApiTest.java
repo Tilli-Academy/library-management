@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,7 +41,7 @@ class AuthApiTest extends ApiTestSupport {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("""
-                                {"email":"%s","password":"%s","displayName":"Ada"}""", email.toUpperCase(), PASSWORD)))
+                                {"email":"%s","password":"%s","displayName":"Ada","phone":"+91 98765 43210"}""", email.toUpperCase(), PASSWORD)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.role").value("MEMBER"))
@@ -57,7 +58,7 @@ class AuthApiTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("""
-                                {"email":"%s","password":"%s","displayName":"Eve","role":"LIBRARIAN","enabled":true}""",
+                                {"email":"%s","password":"%s","displayName":"Eve","phone":"0123456789","role":"LIBRARIAN","enabled":true}""",
                                 uniqueEmail("eve"), PASSWORD)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.role").value("MEMBER"));
@@ -76,7 +77,7 @@ class AuthApiTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("""
-                                {"email":"%s","password":"%s","displayName":"Again"}""", user.email().toUpperCase(), PASSWORD)))
+                                {"email":"%s","password":"%s","displayName":"Again","phone":"0123456789"}""", user.email().toUpperCase(), PASSWORD)))
                 .andExpect(status().isConflict());
     }
 
@@ -85,11 +86,12 @@ class AuthApiTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"not-an-email","password":"short","displayName":"Bad\\u0000Name"}"""))
+                                {"email":"not-an-email","password":"short","displayName":"Bad\\u0000Name","phone":"call me maybe"}"""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.email").exists())
                 .andExpect(jsonPath("$.errors.password").value("Password must be 12 to 72 characters."))
-                .andExpect(jsonPath("$.errors.displayName").value("Name contains invalid characters."));
+                .andExpect(jsonPath("$.errors.displayName").value("Name contains invalid characters."))
+                .andExpect(jsonPath("$.errors.phone").value("Enter a valid phone number, e.g. +91 98765 43210."));
     }
 
     @Test
@@ -98,7 +100,7 @@ class AuthApiTest extends ApiTestSupport {
         mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("""
-                                {"email":"%s","password":"%s","displayName":"Long"}""", uniqueEmail("long"), longPassword)))
+                                {"email":"%s","password":"%s","displayName":"Long","phone":"0123456789"}""", uniqueEmail("long"), longPassword)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(containsString("at most 72 bytes")));
     }
@@ -165,6 +167,22 @@ class AuthApiTest extends ApiTestSupport {
         finally {
             pool.shutdownNow();
         }
+    }
+
+    @Test
+    void membersCanUpdateOnlyTheirOwnPhoneNumber() throws Exception {
+        TestUser user = member("phone");
+        mockMvc.perform(as(user, patch("/api/v1/auth/me")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"+44 20 7946 0958\",\"role\":\"LIBRARIAN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+44 20 7946 0958"))
+                .andExpect(jsonPath("$.role").value("MEMBER"));
+        mockMvc.perform(as(user, patch("/api/v1/auth/me")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"<script>\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(patch("/api/v1/auth/me").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"0123456789\"}"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 
 import { ErrorAlert, PageHeader, Spinner } from '../../components/ui'
 import { api } from '../../lib/api'
+import { ContactMember } from './ContactMember'
 import { dueLabel } from '../../lib/format'
 import type { LibraryStats, Loan, Page } from '../../lib/types'
 
@@ -35,7 +36,7 @@ export function DashboardPage() {
 
       <section className="mt-10">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-bold">Overdue books</h2>
+          <h2 className="font-display text-lg font-bold">Overdue books — call these members</h2>
           <Link to="/admin/loans" className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
             All loans →
           </Link>
@@ -49,14 +50,17 @@ export function DashboardPage() {
         ) : (
           <ul className="divide-y divide-line rounded-2xl bg-surface ring-1 ring-line">
             {overdue.data.items.map((loan) => (
-              <li key={loan.id} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{loan.bookTitle}</p>
-                  <p className="truncate text-sm text-ink-soft">
-                    {loan.memberName} · {loan.memberEmail}
-                  </p>
+              <li key={loan.id} className="flex flex-col gap-3 p-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{loan.bookTitle}</p>
+                    <p className="truncate text-sm text-ink-soft">
+                      {loan.memberName} · {loan.memberEmail}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-red-700 dark:text-red-400">{dueLabel(loan.dueAt)}</span>
                 </div>
-                <span className="text-sm font-semibold text-red-700 dark:text-red-400">{dueLabel(loan.dueAt)}</span>
+                <ContactMember loan={loan} />
               </li>
             ))}
           </ul>

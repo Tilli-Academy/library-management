@@ -89,6 +89,18 @@ public class LoanService {
         return LoanView.of(loans.saveAndFlush(loan), now);
     }
 
+    /** Records that a librarian contacted the member about this (still borrowed) book. */
+    @Transactional
+    public LoanView markReminded(Long loanId) {
+        Loan loan = loans.findByIdForUpdate(loanId).orElseThrow(() -> ApiException.notFound("Loan not found."));
+        if (!loan.isActive()) {
+            throw ApiException.conflict("This book has already been returned.");
+        }
+        Instant now = Instant.now();
+        loan.markReminded(now);
+        return LoanView.of(loans.saveAndFlush(loan), now);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<LoanView> listAll(LoanStatus status, int page, int size) {
         Instant now = Instant.now();

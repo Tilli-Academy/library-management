@@ -1,6 +1,8 @@
 package com.pageturn.loan;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +29,14 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     long countByReturnedAtIsNull();
 
     long countByReturnedAtIsNullAndDueAtBefore(Instant now);
+
+    /** For each book id: the earliest due date of its copies still on loan (= when one should be back). */
+    @Query("""
+            select l.book.id, min(l.dueAt) from Loan l
+            where l.returnedAt is null and l.book.id in :bookIds
+            group by l.book.id
+            """)
+    List<Object[]> earliestDueByBook(@Param("bookIds") Collection<Long> bookIds);
 
     /** Locks the loan row so the same loan can't be returned twice at the same moment. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

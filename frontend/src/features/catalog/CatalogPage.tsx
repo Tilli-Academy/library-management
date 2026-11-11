@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { Badge, BookCover, Button, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
 import { useToast } from '../../components/Toast'
 import { api, query } from '../../lib/api'
+import { expectedBackLabel } from '../../lib/format'
 import type { Book, Page } from '../../lib/types'
 import { BookFormModal, IssueLoanModal } from './BookModals'
 
@@ -137,7 +138,7 @@ export function CatalogPage() {
                         {book.availableCopies} of {book.totalCopies} available
                       </Badge>
                     ) : (
-                      <Badge tone="amber">All copies on loan</Badge>
+                      <Badge tone="amber">{expectedBackLabel(book.expectedBackAt)}</Badge>
                     )}
                   </div>
                   <h2 className="line-clamp-2 font-display font-bold text-ink" title={book.title}>

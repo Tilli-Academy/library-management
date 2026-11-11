@@ -38,6 +38,9 @@ public class UserAccount extends TimestampedEntity {
     @Column(nullable = false, length = 20)
     private Role role = Role.MEMBER;
 
+    @Column(length = 20)
+    private String phone;
+
     @Column(nullable = false)
     private boolean enabled = true;
 
@@ -79,6 +82,14 @@ public class UserAccount extends TimestampedEntity {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public Role getRole() {

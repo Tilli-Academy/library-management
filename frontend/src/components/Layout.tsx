@@ -31,7 +31,7 @@ export function Layout() {
   async function handleSignOut() {
     try {
       await signOut()
-      navigate('/login', { replace: true })
+      navigate('/welcome', { replace: true })
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Unknown error.'
       window.alert(`You are NOT signed out yet: ${reason} Please try again.`)

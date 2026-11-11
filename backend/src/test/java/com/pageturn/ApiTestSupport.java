@@ -58,7 +58,7 @@ public abstract class ApiTestSupport {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("""
-                                {"email":"%s","password":"%s","displayName":"%s"}""", email, PASSWORD, name)))
+                                {"email":"%s","password":"%s","displayName":"%s","phone":"+91 98765 43210"}""", email, PASSWORD, name)))
                 .andExpect(status().isCreated())
                 .andReturn();
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");

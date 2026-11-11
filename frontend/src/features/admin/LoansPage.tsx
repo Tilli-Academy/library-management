@@ -3,6 +3,7 @@ import { Repeat, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { useToast } from '../../components/Toast'
+import { ContactMember } from './ContactMember'
 import { Badge, Button, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
 import { api, query } from '../../lib/api'
 import { dueLabel, formatDate } from '../../lib/format'
@@ -39,7 +40,7 @@ export function LoansPage() {
 
   return (
     <>
-      <PageHeader title="Loans" subtitle="To lend a book, use the Lend button in the catalogue." />
+      <PageHeader title="Loans" subtitle="Who borrowed what, who returned it, and who is late. To lend a book, use Lend in the catalogue." />
       <div className="mb-6 inline-flex rounded-xl bg-surface p-1 ring-1 ring-line" role="tablist">
         {tabs.map((tab) => (
           <button
@@ -79,11 +80,17 @@ export function LoansPage() {
                   <p className="truncate font-semibold">{loan.bookTitle}</p>
                   <p className="truncate text-sm text-ink-soft">
                     {loan.memberName} · {loan.memberEmail}
+                    {loan.memberPhone && ` · ${loan.memberPhone}`}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-faint">
                     Lent {formatDate(loan.issuedAt)}
                     {loan.returnedAt ? ` · Returned ${formatDate(loan.returnedAt)}` : ` · Due ${formatDate(loan.dueAt)}`}
                   </p>
+                  {loan.overdue && (
+                    <div className="mt-2">
+                      <ContactMember loan={loan} onDone={show} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   {!loan.returnedAt && <Badge tone={loan.overdue ? 'red' : 'violet'}>{dueLabel(loan.dueAt)}</Badge>}
