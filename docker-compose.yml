@@ -1,0 +1,73 @@
+# PageTurn local infrastructure.
+#
+#   Development (database only):   docker compose up -d
+#   Full app in containers:        docker compose --profile app up -d --build
+#
+# Every value comes from the .env file next to this file (copy .env.example to .env first).
+name: pageturn
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pageturn-postgres
+    environment:
+      POSTGRES_DB: ${PAGETURN_DB_NAME:-pageturn}
+      POSTGRES_USER: ${PAGETURN_DB_USER:-pageturn}
+      POSTGRES_PASSWORD: ${PAGETURN_DB_PASSWORD:?Set PAGETURN_DB_PASSWORD in .env}
+    ports:
+      # 127.0.0.1 = only this machine can connect to the database, never the network.
+      - "127.0.0.1:${PAGETURN_DB_PORT:-55437}:5432"
+    volumes:
+      - pageturn-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    profiles: ["app"]
+    build: ./backend
+    container_name: pageturn-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PAGETURN_DB_HOST: postgres
+      PAGETURN_DB_PORT: 5432
+      PAGETURN_DB_NAME: ${PAGETURN_DB_NAME:-pageturn}
+      PAGETURN_DB_USER: ${PAGETURN_DB_USER:-pageturn}
+      PAGETURN_DB_PASSWORD: ${PAGETURN_DB_PASSWORD:?Set PAGETURN_DB_PASSWORD in .env}
+      PAGETURN_JWT_SECRET: ${PAGETURN_JWT_SECRET:?Set PAGETURN_JWT_SECRET in .env}
+      PAGETURN_ADMIN_EMAIL: ${PAGETURN_ADMIN_EMAIL:-}
+      PAGETURN_ADMIN_PASSWORD: ${PAGETURN_ADMIN_PASSWORD:-}
+      PAGETURN_COOKIE_SECURE: ${PAGETURN_COOKIE_SECURE:-true}
+      PAGETURN_LIKES_TO_STOCK: ${PAGETURN_LIKES_TO_STOCK:-5}
+      # The address people open in their browser. Browsers send it as the "Origin" of each change request;
+      # only this origin is accepted (requests started from any other website are refused).
+      PAGETURN_CORS_ALLOWED_ORIGINS: ${PAGETURN_PUBLIC_ORIGIN:-http://localhost:8098}
+      # Inside the container network the backend listens on all interfaces, but it is NOT published
+      # to the host: only the frontend (nginx) can reach it.
+      PAGETURN_SERVER_ADDRESS: 0.0.0.0
+      PAGETURN_SERVER_PORT: 8080
+      # nginx is a trusted proxy, so the real client IP is used for rate limiting.
+      PAGETURN_FORWARD_HEADERS: native
+    restart: unless-stopped
+
+  frontend:
+    profiles: ["app"]
+    build: ./frontend
+    container_name: pageturn-frontend
+    depends_on:
+      - backend
+    environment:
+      # Address range of YOUR front proxy / TLS terminator, whose X-Forwarded-For header is trusted for the
+      # client IP. Default trusts nobody. Example when a proxy on the host connects via Docker: 172.17.0.1/32
+      PAGETURN_TRUSTED_PROXY_CIDR: ${PAGETURN_TRUSTED_PROXY_CIDR:-127.0.0.1/32}
+    ports:
+      - "127.0.0.1:${PAGETURN_WEB_PORT:-8098}:8080"
+    restart: unless-stopped
+
+volumes:
+  pageturn-pgdata:

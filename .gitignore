@@ -1,8 +1,35 @@
+# --- Secrets & local environment (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# --- Dependencies & build output ---
 node_modules/
 dist/
+dev-dist/
 target/
+build/
+coverage/
+*.log
+logs/
+
+# --- Local databases (old H2 files, dumps) ---
+backend/data/
+*.db
+*.mv.db
+*.sql.gz
+*.dump
+
+# --- Test reports ---
+frontend/playwright-report/
+frontend/test-results/
+
+# --- Editors / OS ---
 .idea/
 .vscode/
-*.log
-.env
-backend/data/
+*.iml
+.DS_Store
