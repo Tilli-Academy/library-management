@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Palette } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -7,6 +8,7 @@ import { BookCover, Button, ErrorAlert, Modal, TextArea, TextField } from '../..
 import { api, coverUrl, serverFieldError } from '../../lib/api'
 import { bookSchema, issueSchema, type BookForm, type IssueForm } from '../../lib/schemas'
 import type { Book, Loan } from '../../lib/types'
+import { CoverDesigner } from './CoverDesigner'
 
 function toForm(book?: Book): BookForm {
   return {
@@ -33,6 +35,8 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
   const comingSoon = useWatch({ control, name: 'comingSoon' })
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [removeCover, setRemoveCover] = useState(false)
+  const [designing, setDesigning] = useState(false)
+  const [titleValue, authorValue] = useWatch({ control, name: ['title', 'author'] })
 
   const save = useMutation({
     mutationFn: async (form: BookForm) => {
@@ -79,6 +83,22 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
         <ErrorAlert error={save.error} />
         <TextField label="Title" {...register('title')} error={err('title')} maxLength={200} />
         <TextField label="Author" {...register('author')} error={err('author')} maxLength={150} />
+        <TextArea
+          label="About the book (optional)"
+          rows={4}
+          {...register('description')}
+          error={err('description')}
+          maxLength={2000}
+          hint="What is the story about? Shown on the book's page."
+        />
+        <TextArea
+          label="About the author (optional)"
+          rows={3}
+          {...register('aboutAuthor')}
+          error={err('aboutAuthor')}
+          maxLength={2000}
+          hint="A short biography: where they're from, other books they wrote…"
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="ISBN (optional)" inputMode="numeric" {...register('isbn')} error={err('isbn')} maxLength={17} />
           <TextField label="Genre (optional)" {...register('genre')} error={err('genre')} maxLength={60} />
@@ -117,16 +137,20 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
             setCoverFile(null)
             setRemoveCover(true)
           }}
+          onDesign={() => setDesigning(true)}
         />
-        <TextArea label="About the book (optional)" rows={4} {...register('description')} error={err('description')} maxLength={2000} />
-        <TextArea
-          label="About the author (optional)"
-          rows={3}
-          {...register('aboutAuthor')}
-          error={err('aboutAuthor')}
-          maxLength={2000}
-          hint="A short biography: where they're from, other books they wrote…"
-        />
+        {designing && (
+          <CoverDesigner
+            title={titleValue}
+            author={authorValue}
+            onClose={() => setDesigning(false)}
+            onUse={(file) => {
+              setCoverFile(file)
+              setRemoveCover(false)
+              setDesigning(false)
+            }}
+          />
+        )}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel
@@ -149,12 +173,14 @@ function CoverPicker({
   file,
   onFile,
   onRemove,
+  onDesign,
 }: {
   title: string
   currentUrl: string | null
   file: File | null
   onFile: (file: File | null) => void
   onRemove: () => void
+  onDesign: () => void
 }) {
   const [problem, setProblem] = useState<string | null>(null)
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
@@ -191,7 +217,7 @@ function CoverPicker({
       <BookCover title={title} src={shown} eager className="h-28 w-20 shrink-0" />
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold text-ink">Cover picture (optional)</p>
-        <p className="mb-2 text-ink-soft">JPG or PNG, up to 3 MB. It is resized automatically.</p>
+        <p className="mb-2 text-ink-soft">Upload a photo (JPG or PNG, up to 3 MB), or design a poster-style cover.</p>
         <div className="flex flex-wrap gap-2">
           <label className="inline-flex min-h-10 cursor-pointer items-center rounded-lg bg-surface px-3 py-2 font-semibold ring-1 ring-line hover:bg-page">
             {shown ? 'Change picture' : 'Choose picture'}
@@ -205,6 +231,9 @@ function CoverPicker({
               }}
             />
           </label>
+          <Button variant="secondary" onClick={onDesign}>
+            <Palette className="size-4" aria-hidden /> Design a cover
+          </Button>
           {shown && (
             <Button variant="ghost" onClick={onRemove}>
               Remove
