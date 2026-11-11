@@ -32,6 +32,9 @@ server {
 
     # API: the backend sends its own (stricter) security headers, so none are added here.
     location /api/ {
+        # Large enough for a book cover upload (3 MB). The backend still refuses anything over 64 KB on
+        # every other endpoint, so this doesn't open up the rest of the API.
+        client_max_body_size 3400k;
         # With a path after the address, nginx forwards its decoded + normalised URL ("/%61pi" -> "/api"),
         # so the backend always sees the same path that was matched here.
         proxy_pass http://backend:8080/api/;

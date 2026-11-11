@@ -64,7 +64,9 @@ async function ensureCsrfToken(): Promise<string> {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const isForm = body instanceof FormData
+  // FormData (file upload): the browser sets the multipart Content-Type itself.
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (method !== 'GET') headers[CSRF_HEADER] = await ensureCsrfToken()
 
   let response: Response
@@ -73,7 +75,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       method,
       headers,
       credentials: 'same-origin',
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'Cannot reach the server. Check your connection and try again.')
@@ -130,10 +132,17 @@ export function query(params: Record<string, string | number | boolean | undefin
   return text ? `?${text}` : ''
 }
 
+/** Address of a book's cover picture (null if it has none). The version makes browsers fetch new covers. */
+export function coverUrl(book: { id: number; coverVersion: number | null }): string | null {
+  return book.coverVersion == null ? null : `${API_BASE}/books/${book.id}/cover?v=${book.coverVersion}`
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
+  /** Upload a file (multipart form). */
+  putForm: <T>(path: string, form: FormData) => request<T>('PUT', path, form),
   delete: (path: string) => request<void>('DELETE', path),
 }

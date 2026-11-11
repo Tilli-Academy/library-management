@@ -72,6 +72,11 @@ export const bookSchema = z.object({
     .max(2000, 'Description must be at most 2000 characters.')
     .regex(MULTI_LINE, 'Description contains invalid characters.'),
   publishedYear: optionalYear,
+  aboutAuthor: z
+    .string()
+    .trim()
+    .max(2000, 'About the author must be at most 2000 characters.')
+    .regex(MULTI_LINE, 'About the author contains invalid characters.'),
   totalCopies: z.string().trim(),
   /** "Coming soon": announced but no copies yet. Then the number of copies isn't needed. */
   comingSoon: z.boolean(),

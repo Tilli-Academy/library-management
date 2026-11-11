@@ -1,6 +1,6 @@
 import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
-import { forwardRef, useEffect, useId, useRef } from 'react'
+import { forwardRef, useEffect, useId, useRef, useState } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
@@ -165,7 +165,32 @@ export function Badge({ tone, children }: { tone: 'green' | 'amber' | 'red' | 'v
 }
 
 /** A generated cover: colour chosen from the title, so the same book always looks the same. */
-export function BookCover({ title, className = '' }: { title: string; className?: string }) {
+export function BookCover({
+  title,
+  src,
+  className = '',
+  eager = false,
+}: {
+  title: string
+  src?: string | null
+  className?: string
+  /** Load right away (previews, the details page) instead of when scrolled into view. */
+  eager?: boolean
+}) {
+  // Remember WHICH picture failed, so choosing a new one shows it again.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  if (src && src !== failedSrc) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        onError={() => setFailedSrc(src)}
+        className={`rounded-lg bg-subtle object-cover shadow-sm ${className}`}
+      />
+    )
+  }
   const palettes = [
     'from-violet-600 to-indigo-700',
     'from-rose-500 to-orange-500',

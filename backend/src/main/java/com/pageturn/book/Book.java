@@ -44,6 +44,13 @@ public class Book extends TimestampedEntity {
     @Column(name = "published_year")
     private Integer publishedYear;
 
+    @Column(name = "about_author", length = 2000)
+    private String aboutAuthor;
+
+    /** When the cover picture last changed; null = no cover uploaded. */
+    @Column(name = "cover_updated_at")
+    private java.time.Instant coverUpdatedAt;
+
     @Column(name = "total_copies", nullable = false)
     private int totalCopies;
 
@@ -99,6 +106,22 @@ public class Book extends TimestampedEntity {
         changeTotalCopies(totalCopiesIfInStock);
         this.status = BookStatus.AVAILABLE;
         this.expectedArrival = null;
+    }
+
+    public void setAboutAuthor(String aboutAuthor) {
+        this.aboutAuthor = aboutAuthor;
+    }
+
+    public String getAboutAuthor() {
+        return aboutAuthor;
+    }
+
+    void setCoverUpdatedAt(java.time.Instant coverUpdatedAt) {
+        this.coverUpdatedAt = coverUpdatedAt;
+    }
+
+    public java.time.Instant getCoverUpdatedAt() {
+        return coverUpdatedAt;
     }
 
     public boolean isComingSoon() {

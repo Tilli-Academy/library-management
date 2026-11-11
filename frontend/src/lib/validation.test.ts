@@ -19,7 +19,7 @@ describe('safeRedirect', () => {
 })
 
 describe('form rules', () => {
-  const validBook = { title: 'Dune', author: 'Frank Herbert', isbn: '', genre: '', description: '', publishedYear: '', totalCopies: '2', comingSoon: false, expectedArrival: '' }
+  const validBook = { title: 'Dune', author: 'Frank Herbert', isbn: '', genre: '', description: '', publishedYear: '', totalCopies: '2', comingSoon: false, expectedArrival: '', aboutAuthor: '' }
 
   it('accepts a normal book and trims spaces', () => {
     const result = bookSchema.parse({ ...validBook, title: '  Dune  ' })

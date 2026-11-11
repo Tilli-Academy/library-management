@@ -15,7 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 
 import com.jayway.jsonpath.JsonPath;
 import com.pageturn.common.security.SessionCookies;
@@ -72,7 +72,7 @@ public abstract class ApiTestSupport {
     }
 
     /** Sends the request as this user (session cookie + CSRF token, like the real frontend). */
-    protected static MockHttpServletRequestBuilder as(TestUser user, MockHttpServletRequestBuilder request) {
+    protected static <B extends AbstractMockHttpServletRequestBuilder<B>> B as(TestUser user, B request) {
         return request.cookie(user.session()).with(csrf());
     }
 

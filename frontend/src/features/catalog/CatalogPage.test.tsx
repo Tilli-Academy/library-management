@@ -12,7 +12,7 @@ const xssTitle = '<img src=x onerror="window.hacked=true"><script>window.hacked=
 function mockServer(user: User) {
   const books: Page<Book> = {
     items: [
-      { id: 1, isbn: null, title: xssTitle, author: 'Mallory', genre: null, description: null, publishedYear: null, totalCopies: 2, availableCopies: 1, expectedBackAt: null, status: 'AVAILABLE', expectedArrival: null },
+      { id: 1, isbn: null, title: xssTitle, author: 'Mallory', genre: null, description: null, publishedYear: null, totalCopies: 2, availableCopies: 1, expectedBackAt: null, status: 'AVAILABLE', expectedArrival: null, aboutAuthor: null, coverVersion: null },
     ],
     page: 0,
     size: 12,

@@ -26,6 +26,9 @@ export interface Book {
   status: 'AVAILABLE' | 'COMING_SOON'
   /** Optional date (yyyy-mm-dd) a coming-soon book is expected to arrive. */
   expectedArrival: string | null
+  aboutAuthor: string | null
+  /** Changes when the cover picture changes; null = no cover uploaded. */
+  coverVersion: number | null
 }
 
 export interface Loan {

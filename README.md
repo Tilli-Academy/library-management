@@ -11,6 +11,7 @@ accounts can only sign in. They are created by the head librarian, so nobody can
 **Members**
 - Sign up (name, phone number, email, password) / sign in
 - Search the catalogue by title, author, genre or ISBN; filter to available books
+- Open any book for its **details page**: cover picture, about the book, about the author, availability
 - See if a book is available, and if all copies are out, **when it is expected back** ("Expected back in 4 days")
 - "My books": current loans with due dates and overdue warnings, borrowing history, and their phone number
 - See **Coming soon** books (announced, not in stock yet), optionally with an expected arrival date
@@ -20,7 +21,8 @@ accounts can only sign in. They are created by the head librarian, so nobody can
 
 **Librarians** (everything members can do, plus)
 - Dashboard: titles, copies, books on loan, overdue loans, members
-- Add, edit and delete books (ISBN check-digit validation, multiple copies per title)
+- Add, edit and delete books (ISBN check-digit validation, multiple copies per title), with a **cover picture**
+  (JPG/PNG up to 3 MB), **about the book** and **about the author**
 - Lend a copy to a member, mark loans returned; lists of active / overdue / returned loans (who borrowed, who returned)
 - Add books as **Coming soon** (with an optional arrival date); click **Copies arrived** to put them in stock
 - See all requests sorted by likes (with who asked), and **Get it** or **Decline** a request by hand
@@ -83,7 +85,7 @@ For a real deployment, put HTTPS in front (a reverse proxy or your host's load b
 ## Tests
 
 ```bash
-cd backend && ./mvnw verify          # 58 tests, starts a throw-away PostgreSQL in Docker
+cd backend && ./mvnw verify          # 63 tests, starts a throw-away PostgreSQL in Docker
 cd frontend && npm run lint && npm test && npm run build
 ```
 
@@ -98,6 +100,8 @@ All endpoints are under `/api/v1`. Changes (`POST`/`PUT`/`PATCH`/`DELETE`) need 
 | Signed in | GET / PATCH | `/auth/me` | Current user / update your phone number |
 | Signed in | GET | `/books?q=&available=&comingSoon=&page=&size=` | Search the catalogue |
 | Signed in | GET | `/books/{id}` | One book |
+| Signed in | GET | `/books/{id}/cover` | Cover picture (JPEG) |
+| Librarian | PUT / DELETE | `/admin/books/{id}/cover` | Upload (multipart field `file`) / remove a cover |
 | Signed in | GET | `/me/loans?returned=` | Your own loans |
 | Librarian | POST / PUT / DELETE | `/admin/books`, `/admin/books/{id}` | Manage books |
 | Librarian | GET / POST | `/admin/loans?status=`, `/admin/loans` | List / lend |

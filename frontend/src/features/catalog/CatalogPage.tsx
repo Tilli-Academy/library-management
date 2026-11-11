@@ -1,11 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PackageCheck, Pencil, Plus, Search, Trash2, UserRoundPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 
 import { useAuth } from '../../auth/AuthContext'
 import { Badge, BookCover, Button, EmptyState, ErrorAlert, PageHeader, Pagination, Spinner } from '../../components/ui'
 import { useToast } from '../../components/Toast'
-import { api, query } from '../../lib/api'
+import { api, coverUrl, query } from '../../lib/api'
 import { expectedBackLabel, formatDate } from '../../lib/format'
 import type { Book, Page } from '../../lib/types'
 import { BookFormModal, IssueLoanModal } from './BookModals'
@@ -138,7 +139,9 @@ export function CatalogPage() {
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {books.data.items.map((book) => (
               <li key={book.id} className="flex gap-4 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-line">
-                <BookCover title={book.title} className="h-32 w-22 shrink-0" />
+                <Link to={`/books/${book.id}`} className="shrink-0" aria-label={`Details of ${book.title}`}>
+                  <BookCover title={book.title} src={coverUrl(book)} className="h-32 w-22" />
+                </Link>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="mb-1">
                     {book.status === 'COMING_SOON' ? (
@@ -154,7 +157,9 @@ export function CatalogPage() {
                     )}
                   </div>
                   <h2 className="line-clamp-2 font-display font-bold text-ink" title={book.title}>
-                    {book.title}
+                    <Link to={`/books/${book.id}`} className="hover:text-brand-700 hover:underline dark:hover:text-brand-300">
+                      {book.title}
+                    </Link>
                   </h2>
                   <p className="truncate text-sm text-ink-soft">{book.author}</p>
                   <p className="mt-0.5 truncate text-xs text-ink-faint">

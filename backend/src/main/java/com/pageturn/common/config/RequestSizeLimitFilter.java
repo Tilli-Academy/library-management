@@ -31,15 +31,24 @@ import jakarta.servlet.http.HttpServletResponse;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
-    private final long maxBytes;
+    /** The only endpoint that accepts big bodies: uploading a book cover picture. */
+    private static final java.util.regex.Pattern COVER_UPLOAD =
+            java.util.regex.Pattern.compile("^/api/v1/admin/books/[0-9]+/cover$");
 
-    public RequestSizeLimitFilter(@Value("${pageturn.http.max-request-bytes:65536}") long maxBytes) {
-        this.maxBytes = maxBytes;
+    private final long defaultMaxBytes;
+    private final long coverMaxBytes;
+
+    public RequestSizeLimitFilter(@Value("${pageturn.http.max-request-bytes:65536}") long defaultMaxBytes,
+            @Value("${pageturn.http.max-cover-upload-bytes:3407872}") long coverMaxBytes) {
+        this.defaultMaxBytes = defaultMaxBytes;
+        this.coverMaxBytes = coverMaxBytes;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        long maxBytes = COVER_UPLOAD.matcher(com.pageturn.common.web.RequestPaths.of(request)).matches()
+                ? coverMaxBytes : defaultMaxBytes;
         if (request.getContentLengthLong() > maxBytes) {
             response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
             response.setContentType("application/problem+json");

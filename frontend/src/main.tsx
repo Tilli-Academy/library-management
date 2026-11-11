@@ -10,6 +10,7 @@ import { LoginPage, RegisterPage, WelcomePage } from './auth/AuthPages'
 import { RedirectIfSignedIn, RequireAuth, RequireLibrarian } from './auth/guards'
 import { Layout } from './components/Layout'
 import { NotFound } from './components/NotFound'
+import { BookDetailsPage } from './features/catalog/BookDetailsPage'
 import { CatalogPage } from './features/catalog/CatalogPage'
 import { MyBooksPage } from './features/loans/MyBooksPage'
 import { RequestsPage } from './features/requests/RequestsPage'
@@ -42,6 +43,7 @@ const router = createBrowserRouter(
           element: <Layout />,
           children: [
             { path: '/', element: <CatalogPage /> },
+            { path: '/books/:id', element: <BookDetailsPage /> },
             { path: '/my-books', element: <MyBooksPage /> },
             { path: '/requests', element: <RequestsPage /> },
             {

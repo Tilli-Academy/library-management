@@ -65,6 +65,7 @@ public class BookService {
                     TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear(),
                     request.totalCopies());
         }
+        book.setAboutAuthor(TextRules.clean(request.aboutAuthor()));
         return BookView.of(books.saveAndFlush(book), null);
     }
 
@@ -77,6 +78,7 @@ public class BookService {
         }
         book.setDetails(isbn, TextRules.clean(request.title()), TextRules.clean(request.author()),
                 TextRules.clean(request.genre()), TextRules.clean(request.description()), request.publishedYear());
+        book.setAboutAuthor(TextRules.clean(request.aboutAuthor()));
         book.changeStock(request.isComingSoon(), request.totalCopies(), request.expectedArrival());
         Book saved = books.saveAndFlush(book);
         return BookView.of(saved, expectedBack(List.of(saved)).get(id));

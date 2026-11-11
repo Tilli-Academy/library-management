@@ -19,7 +19,8 @@ How PageTurn protects its users, and the results of the security review done dur
 | Input | Validated in the browser (Zod) and again on the server (Bean Validation) with length limits; invisible control characters are refused; ISBN check digits verified. The database has CHECK / UNIQUE / FOREIGN KEY rules too. |
 | SQL injection | Only parameterised queries (Spring Data JPA); search wildcards are escaped. |
 | Rate limiting | Per IP: 10 sign-in/sign-up attempts and 300 API requests per minute. Per email: 5 failed sign-ins per 15 minutes. Attempts are counted before the password check, so parallel guesses count too. |
-| Request size | Bodies over 64 KB are refused before parsing. |
+| Request size | Bodies over 64 KB are refused before parsing — except the cover upload endpoint (3 MB). |
+| Picture uploads | Librarians only. The file must really decode as JPG/PNG (name and claimed type are ignored); huge dimensions are refused before decoding; it is shrunk to 600×900 and **redrawn as a brand-new JPEG**, which removes hidden data (scripts, camera/GPS metadata). Served as `image/jpeg` with `nosniff`, only to signed-in users. |
 | Headers | CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy no-referrer, Permissions-Policy, COOP. |
 | CORS | Exact origins only (wildcards are refused at startup). |
 | Errors & debug | No stack traces or internal messages sent to clients; SQL logging off; no H2 console; only `/actuator/health` exposed (no details); unknown paths denied; no source maps. |

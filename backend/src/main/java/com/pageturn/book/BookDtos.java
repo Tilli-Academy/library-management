@@ -41,7 +41,10 @@ public final class BookDtos {
             /** true = announce the book as "coming soon" (no copies yet; totalCopies is ignored). */
             Boolean comingSoon,
             /** Optional, only used for coming-soon books. */
-            LocalDate expectedArrival) {
+            LocalDate expectedArrival,
+            @Size(max = 2000, message = "About the author must be at most 2000 characters.")
+            @Pattern(regexp = TextRules.MULTI_LINE, message = "About the author contains invalid characters.")
+            String aboutAuthor) {
 
         public boolean isComingSoon() {
             return Boolean.TRUE.equals(comingSoon);
@@ -54,12 +57,16 @@ public final class BookDtos {
      */
     public record BookView(Long id, String isbn, String title, String author, String genre, String description,
             Integer publishedYear, int totalCopies, int availableCopies, Instant expectedBackAt, BookStatus status,
-            LocalDate expectedArrival) {
+            LocalDate expectedArrival, String aboutAuthor,
+            /** Changes whenever the cover changes (null = no cover). Picture: GET /api/v1/books/{id}/cover?v=... */
+            Long coverVersion) {
 
         public static BookView of(Book book, Instant expectedBackAt) {
             return new BookView(book.getId(), book.getIsbn(), book.getTitle(), book.getAuthor(), book.getGenre(),
                     book.getDescription(), book.getPublishedYear(), book.getTotalCopies(), book.getAvailableCopies(),
-                    book.getAvailableCopies() > 0 ? null : expectedBackAt, book.getStatus(), book.getExpectedArrival());
+                    book.getAvailableCopies() > 0 ? null : expectedBackAt, book.getStatus(), book.getExpectedArrival(),
+                    book.getAboutAuthor(),
+                    book.getCoverUpdatedAt() == null ? null : book.getCoverUpdatedAt().toEpochMilli());
         }
     }
 }

@@ -25,6 +25,11 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      # Only the book cover upload accepts files (see RequestSizeLimitFilter for the per-endpoint limit).
+      max-file-size: 3MB
+      max-request-size: 3328KB
   autoconfigure:
     # No auto-generated demo user with a printed password; users live in the database.
     exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
@@ -91,6 +96,8 @@ pageturn:
   http:
     # Request bodies larger than this are rejected (413) before they are parsed.
     max-request-bytes: 65536
+    # Exception: uploading a book cover picture (3 MB file + form overhead).
+    max-cover-upload-bytes: 3407872
   rate-limit:
     # Requests per minute from one IP address.
     auth-per-minute: 10

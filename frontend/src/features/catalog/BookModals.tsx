@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 
-import { Button, ErrorAlert, Modal, TextArea, TextField } from '../../components/ui'
-import { api, serverFieldError } from '../../lib/api'
+import { BookCover, Button, ErrorAlert, Modal, TextArea, TextField } from '../../components/ui'
+import { api, coverUrl, serverFieldError } from '../../lib/api'
 import { bookSchema, issueSchema, type BookForm, type IssueForm } from '../../lib/schemas'
 import type { Book, Loan } from '../../lib/types'
 
@@ -15,6 +16,7 @@ function toForm(book?: Book): BookForm {
     genre: book?.genre ?? '',
     description: book?.description ?? '',
     publishedYear: book?.publishedYear ? String(book.publishedYear) : '',
+    aboutAuthor: book?.aboutAuthor ?? '',
     totalCopies: String(book && book.status !== 'COMING_SOON' ? book.totalCopies : 1),
     comingSoon: book?.status === 'COMING_SOON',
     expectedArrival: book?.expectedArrival ?? '',
@@ -29,25 +31,43 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
     defaultValues: toForm(book),
   })
   const comingSoon = useWatch({ control, name: 'comingSoon' })
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [removeCover, setRemoveCover] = useState(false)
 
   const save = useMutation({
-    mutationFn: (form: BookForm) => {
+    mutationFn: async (form: BookForm) => {
       const body = {
         title: form.title,
         author: form.author,
         isbn: form.isbn || null,
         genre: form.genre || null,
         description: form.description || null,
+        aboutAuthor: form.aboutAuthor || null,
         publishedYear: form.publishedYear ? Number(form.publishedYear) : null,
         totalCopies: form.comingSoon ? 0 : Number(form.totalCopies),
         comingSoon: form.comingSoon,
         expectedArrival: form.comingSoon && form.expectedArrival ? form.expectedArrival : null,
       }
-      return book ? api.put<Book>(`/admin/books/${book.id}`, body) : api.post<Book>('/admin/books', body)
+      const saved = await (book ? api.put<Book>(`/admin/books/${book.id}`, body) : api.post<Book>('/admin/books', body))
+      // The book itself is saved now. The cover is a second step; if only that fails, say so clearly.
+      try {
+        if (coverFile) {
+          const upload = new FormData()
+          upload.append('file', coverFile)
+          await api.putForm<Book>(`/admin/books/${saved.id}/cover`, upload)
+        } else if (removeCover && book?.coverVersion != null) {
+          await api.delete(`/admin/books/${saved.id}/cover`)
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'Unknown error.'
+        return { saved, coverProblem: reason }
+      }
+      return { saved, coverProblem: null }
     },
-    onSuccess: async (saved) => {
+    onSuccess: async ({ saved, coverProblem }) => {
       await queryClient.invalidateQueries({ queryKey: ['books'] })
-      onSaved(book ? `Saved “${saved.title}”.` : `Added “${saved.title}” to the catalogue.`)
+      const done = book ? `Saved “${saved.title}”.` : `Added “${saved.title}” to the catalogue.`
+      onSaved(coverProblem ? `${done} But the cover couldn't be saved: ${coverProblem} Edit the book to try again.` : done)
     },
   })
 
@@ -85,7 +105,28 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
             </span>
           </span>
         </label>
-        <TextArea label="Description (optional)" rows={4} {...register('description')} error={err('description')} maxLength={2000} />
+        <CoverPicker
+          title={book?.title ?? 'New book'}
+          currentUrl={book && !removeCover ? coverUrl(book) : null}
+          file={coverFile}
+          onFile={(file) => {
+            setCoverFile(file)
+            setRemoveCover(false)
+          }}
+          onRemove={() => {
+            setCoverFile(null)
+            setRemoveCover(true)
+          }}
+        />
+        <TextArea label="About the book (optional)" rows={4} {...register('description')} error={err('description')} maxLength={2000} />
+        <TextArea
+          label="About the author (optional)"
+          rows={3}
+          {...register('aboutAuthor')}
+          error={err('aboutAuthor')}
+          maxLength={2000}
+          hint="A short biography: where they're from, other books they wrote…"
+        />
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel
@@ -96,6 +137,87 @@ export function BookFormModal({ book, onClose, onSaved }: { book?: Book; onClose
         </div>
       </form>
     </Modal>
+  )
+}
+
+const MAX_COVER_BYTES = 3 * 1024 * 1024
+
+/** Choose a cover picture: shows a preview, checks type and size before anything is uploaded. */
+function CoverPicker({
+  title,
+  currentUrl,
+  file,
+  onFile,
+  onRemove,
+}: {
+  title: string
+  currentUrl: string | null
+  file: File | null
+  onFile: (file: File | null) => void
+  onRemove: () => void
+}) {
+  const [problem, setProblem] = useState<string | null>(null)
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
+
+  async function choose(selected: File | undefined) {
+    setProblem(null)
+    if (!selected) return
+    if (!['image/jpeg', 'image/png'].includes(selected.type)) {
+      setProblem('Choose a JPG or PNG picture.')
+      return
+    }
+    if (selected.size > MAX_COVER_BYTES) {
+      setProblem('The picture must be 3 MB or smaller.')
+      return
+    }
+    // The file name and type can lie (e.g. a script renamed to .png): check that it really opens as a picture.
+    // (The server checks again and redraws it; this just gives a quick, clear message.)
+    try {
+      const bitmap = await createImageBitmap(selected)
+      bitmap.close()
+    } catch {
+      setProblem("This file isn't a valid JPG or PNG picture.")
+      return
+    }
+    onFile(selected)
+  }
+
+  const shown = previewUrl ?? currentUrl
+  return (
+    <div className="flex items-start gap-4 rounded-lg bg-subtle p-3">
+      <BookCover title={title} src={shown} eager className="h-28 w-20 shrink-0" />
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="font-semibold text-ink">Cover picture (optional)</p>
+        <p className="mb-2 text-ink-soft">JPG or PNG, up to 3 MB. It is resized automatically.</p>
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex min-h-10 cursor-pointer items-center rounded-lg bg-surface px-3 py-2 font-semibold ring-1 ring-line hover:bg-page">
+            {shown ? 'Change picture' : 'Choose picture'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              className="sr-only"
+              onChange={(event) => {
+                void choose(event.target.files?.[0])
+                event.target.value = ''
+              }}
+            />
+          </label>
+          {shown && (
+            <Button variant="ghost" onClick={onRemove}>
+              Remove
+            </Button>
+          )}
+        </div>
+        {problem && (
+          <p role="alert" className="mt-1 text-red-700 dark:text-red-400">
+            {problem}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 
