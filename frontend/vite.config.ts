@@ -49,7 +49,7 @@ export default defineConfig({
       },
       workbox: {
         // Only the app's own files are cached. API responses (personal data) are NEVER stored offline.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webmanifest}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/api\//, /\/actuator\//],
         runtimeCaching: [],
