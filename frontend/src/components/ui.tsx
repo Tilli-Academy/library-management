@@ -1,4 +1,6 @@
 import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
+
+import libraryHallSmall from '../assets/library-hall-small.jpg'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 import { forwardRef, useEffect, useId, useRef, useState } from 'react'
 
@@ -131,21 +133,29 @@ export function EmptyState({ icon, title, children }: { icon?: ReactNode; title:
       <div className="mb-3 grid size-12 place-items-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
         {icon ?? <BookOpen className="size-6" aria-hidden />}
       </div>
-      <h3 className="font-semibold text-ink">{title}</h3>
+      <h3 className="font-display text-xl font-semibold text-ink">{title}</h3>
       {children && <div className="mt-1 max-w-sm text-sm text-ink-soft">{children}</div>}
     </div>
   )
 }
 
+/**
+ * Page title on a strip of the library photo (same look as the welcome page). Text is cream on a dark veil,
+ * so it stays readable over the busy picture.
+ */
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>}
+    <header className="relative mb-6 overflow-hidden rounded-2xl bg-wood text-cream shadow-sm">
+      <img src={libraryHallSmall} alt="" className="absolute inset-0 size-full object-cover object-[50%_35%]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" aria-hidden />
+      <div className="relative flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-8">
+        <div>
+          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+          {subtitle && <p className="mt-1 max-w-2xl text-sm text-cream/80">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
-    </div>
+    </header>
   )
 }
 
@@ -192,23 +202,25 @@ export function BookCover({
     )
   }
   const palettes = [
-    'from-violet-600 to-indigo-700',
-    'from-rose-500 to-orange-500',
-    'from-emerald-600 to-teal-700',
-    'from-amber-500 to-rose-600',
-    'from-sky-600 to-blue-800',
-    'from-fuchsia-600 to-purple-800',
+    // Old leather bindings: burgundy, forest green, navy, oxblood, tan, slate.
+    'from-[#6b1f24] to-[#3e1013]',
+    'from-[#24452f] to-[#122619]',
+    'from-[#1f2f4f] to-[#0f182b]',
+    'from-[#5a2a1a] to-[#2e140b]',
+    'from-[#7a5230] to-[#462c16]',
+    'from-[#3c3f45] to-[#1e2024]',
   ]
   let hash = 0
   for (const char of title) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   return (
     <div
       aria-hidden
-      className={`relative flex flex-col justify-between overflow-hidden rounded-lg bg-gradient-to-br p-3 text-white shadow-inner ${palettes[hash % palettes.length]} ${className}`}
+      className={`relative flex flex-col items-center justify-center overflow-hidden rounded-md bg-gradient-to-br p-3 text-center text-gold shadow-md ring-1 ring-black/20 ${palettes[hash % palettes.length]} ${className}`}
     >
-      <div className="absolute inset-y-0 left-1.5 w-px bg-white/30" />
-      <BookOpen className="size-5 opacity-80" />
-      <p className="line-clamp-3 font-display text-xs leading-tight font-semibold">{title}</p>
+      {/* spine ridge and a gilded frame, like a cloth or leather binding */}
+      <div className="absolute inset-y-0 left-0 w-2 bg-black/25" />
+      <div className="absolute inset-2 rounded-sm border border-gold/50" />
+      <p className="relative line-clamp-4 font-display text-sm leading-tight font-semibold">{title}</p>
     </div>
   )
 }
@@ -267,7 +279,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
         className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id={titleId} className="font-display text-lg font-bold text-ink">
+          <h2 id={titleId} className="font-display text-2xl font-bold text-ink">
             {title}
           </h2>
           <button

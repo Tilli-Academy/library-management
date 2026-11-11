@@ -156,7 +156,7 @@ export function CatalogPage() {
                       <Badge tone="amber">{expectedBackLabel(book.expectedBackAt)}</Badge>
                     )}
                   </div>
-                  <h2 className="line-clamp-2 font-display font-bold text-ink" title={book.title}>
+                  <h2 className="line-clamp-2 font-display text-xl leading-tight font-bold text-ink" title={book.title}>
                     <Link to={`/books/${book.id}`} className="hover:text-brand-700 hover:underline dark:hover:text-brand-300">
                       {book.title}
                     </Link>

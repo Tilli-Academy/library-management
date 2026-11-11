@@ -1,4 +1,4 @@
-import { BookMarked, BookOpen, LayoutDashboard, Library, Lightbulb, LogOut, Repeat, Users } from 'lucide-react'
+import { BookMarked, LayoutDashboard, Library, Lightbulb, LogOut, Repeat, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
@@ -41,54 +41,45 @@ export function Layout() {
 
   return (
     <div className="min-h-dvh md:flex">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 md:flex">
-        <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="grid size-9 place-items-center rounded-xl bg-brand-700 text-white">
-            <BookOpen className="size-5" aria-hidden />
-          </div>
-          <span className="font-display text-xl font-bold">PageTurn</span>
-        </div>
+      {/* Side menu: dark wood panel, like library shelving. */}
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-wood px-4 py-6 text-cream md:flex">
+        <Wordmark className="mb-8 px-2 text-3xl" />
         <nav className="flex flex-1 flex-col gap-1" aria-label="Main">
           {memberNav.map((item) => (
             <SideLink key={item.to} item={item} />
           ))}
           {isLibrarian && (
             <>
-              <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wider text-ink-faint uppercase">Librarian</p>
+              <p className="mt-6 mb-1 px-3 font-display text-sm tracking-[0.2em] text-gold uppercase">Librarian</p>
               {librarianNav.map((item) => (
                 <SideLink key={item.to} item={item} />
               ))}
             </>
           )}
         </nav>
-        <div className="mt-6 border-t border-line pt-4">
+        <div className="mt-6 border-t border-cream/15 pt-4">
           <div className="flex items-center gap-3 px-2">
-            <div className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300">
+            <div className="grid size-9 shrink-0 place-items-center rounded-full border border-gold/60 font-display text-lg font-semibold text-gold">
               {user?.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{user?.displayName}</p>
-              <p className="truncate text-xs text-ink-faint">{isLibrarian ? 'Librarian' : 'Member'}</p>
+              <p className="truncate text-xs text-cream/60">{isLibrarian ? 'Librarian' : 'Member'}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-subtle"
+            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-cream/75 hover:bg-cream/10 hover:text-cream"
           >
             <LogOut className="size-4" aria-hidden /> Sign out
           </button>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface/90 px-4 py-3 backdrop-blur md:hidden">
-        <div className="flex items-center gap-2">
-          <div className="grid size-8 place-items-center rounded-lg bg-brand-700 text-white">
-            <BookOpen className="size-4" aria-hidden />
-          </div>
-          <span className="font-display text-lg font-bold">PageTurn</span>
-        </div>
-        <button type="button" onClick={handleSignOut} className="rounded-lg p-2 text-ink-soft hover:bg-subtle" aria-label="Sign out">
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-wood px-4 py-3 text-cream shadow-md md:hidden">
+        <Wordmark className="text-2xl" />
+        <button type="button" onClick={handleSignOut} className="rounded-lg p-2 text-cream/80 hover:bg-cream/10" aria-label="Sign out">
           <LogOut className="size-5" aria-hidden />
         </button>
       </header>
@@ -98,7 +89,7 @@ export function Layout() {
       </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 flex bg-wood pb-[env(safe-area-inset-bottom)] text-cream shadow-[0_-4px_12px_rgba(0,0,0,0.25)] md:hidden"
         aria-label="Main"
       >
         {items.map((item) => (
@@ -107,7 +98,7 @@ export function Layout() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-brand-700 dark:text-brand-300' : 'text-ink-faint'}`
+              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-gold' : 'text-cream/60'}`
             }
           >
             <item.icon className="size-5" aria-hidden />
@@ -119,14 +110,24 @@ export function Layout() {
   )
 }
 
+/** "PageTurn LIBRARY" in the welcome page's lettering. */
+function Wordmark({ className = '' }: { className?: string }) {
+  return (
+    <p className={`font-display leading-none text-cream ${className}`}>
+      <span className="italic">PageTurn</span>{' '}
+      <span className="text-[0.62em] tracking-[0.18em] text-gold uppercase">Library</span>
+    </p>
+  )
+}
+
 function SideLink({ item }: { item: NavItem }) {
   return (
     <NavLink
       to={item.to}
       end={item.end}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-          isActive ? 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200' : 'text-ink-soft hover:bg-subtle'
+        `flex items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-sm font-medium transition ${
+          isActive ? 'border-gold bg-cream/10 text-cream' : 'border-transparent text-cream/70 hover:bg-cream/5 hover:text-cream'
         }`
       }
     >

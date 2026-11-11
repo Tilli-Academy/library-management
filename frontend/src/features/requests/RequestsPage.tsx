@@ -113,7 +113,7 @@ export function RequestsPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-display font-bold">{s.title}</h2>
+                        <h2 className="font-display text-xl font-bold">{s.title}</h2>
                         {s.mine && <Badge tone="slate">Your request</Badge>}
                         {s.status === 'APPROVED' && <Badge tone="violet">{s.bookStatus === 'AVAILABLE' ? 'In stock now' : 'Coming soon'}</Badge>}
                         {s.status === 'DECLINED' && <Badge tone="red">Declined</Badge>}

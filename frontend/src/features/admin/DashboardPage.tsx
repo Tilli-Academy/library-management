@@ -36,7 +36,7 @@ export function DashboardPage() {
 
       <section className="mt-10">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-bold">Overdue books — call these members</h2>
+          <h2 className="font-display text-2xl font-bold">Overdue books — call these members</h2>
           <Link to="/admin/loans" className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
             All loans →
           </Link>
@@ -77,7 +77,7 @@ function Stat({ icon: Icon, label, value, alert = false }: { icon: ComponentType
         <Icon className="size-5" aria-hidden />
       </div>
       <p className="text-sm text-ink-soft">{label}</p>
-      <p className="font-display text-2xl font-bold tabular-nums">{value.toLocaleString()}</p>
+      <p className="text-2xl font-bold tabular-nums">{value.toLocaleString()}</p>
     </div>
   )
 }

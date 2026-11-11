@@ -82,7 +82,7 @@ export function BookDetailsPage() {
           )}
 
           <section className="mt-8">
-            <h2 className="font-display text-lg font-bold">About the book</h2>
+            <h2 className="font-display text-2xl font-bold">About the book</h2>
             {/* Plain text only: React shows it as text, line breaks kept, never as HTML. */}
             <p className="mt-2 leading-relaxed whitespace-pre-line text-ink-soft">
               {b.description || 'No description yet.'}
@@ -90,7 +90,7 @@ export function BookDetailsPage() {
           </section>
 
           <section className="mt-8">
-            <h2 className="font-display text-lg font-bold">About {b.author}</h2>
+            <h2 className="font-display text-2xl font-bold">About {b.author}</h2>
             <p className="mt-2 leading-relaxed whitespace-pre-line text-ink-soft">
               {b.aboutAuthor || 'No information about the author yet.'}
             </p>

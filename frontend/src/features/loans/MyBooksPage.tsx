@@ -59,7 +59,7 @@ export function MyBooksPage() {
               <li key={loan.id} className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-line">
                 <BookCover title={loan.bookTitle} className="h-20 w-14 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate font-display font-bold">{loan.bookTitle}</h2>
+                  <h2 className="truncate font-display text-xl font-bold">{loan.bookTitle}</h2>
                   <p className="truncate text-sm text-ink-soft">{loan.bookAuthor}</p>
                   <p className="mt-1 text-xs text-ink-faint">
                     Borrowed {formatDate(loan.issuedAt)}
