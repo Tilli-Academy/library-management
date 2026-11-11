@@ -27,7 +27,8 @@ export function CoverDesigner({
   useEffect(() => {
     let alive = true
     Promise.all([
-      document.fonts.load("400 64px 'Instrument Serif'"),
+      document.fonts.load("700 64px 'Inter Variable'"),
+      document.fonts.load("500 32px 'Inter Variable'"),
     ])
       .catch(() => undefined)
       .finally(() => {

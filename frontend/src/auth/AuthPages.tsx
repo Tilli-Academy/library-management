@@ -26,7 +26,8 @@ function AuthShell({ title, subtitle, children, footer }: { title: string; subti
             <ArrowLeft className="size-4" aria-hidden /> Back
           </Link>
           <p className="mb-6 text-center font-elegant text-4xl text-[#f3eee3]">
-            <span className="italic">PageTurn</span> <span className="tracking-wide uppercase">Library</span>
+            <span className="font-bold">PageTurn</span>{' '}
+            <span className="text-2xl font-light tracking-[0.3em] uppercase">Library</span>
           </p>
           <div className="rounded-2xl bg-surface/95 p-6 text-ink shadow-2xl ring-1 ring-black/10 backdrop-blur sm:p-8">
             <h1 className="font-display text-xl font-bold">{title}</h1>
@@ -51,10 +52,10 @@ export function WelcomePage() {
     <LibraryBackdrop>
       <main className="flex flex-1 flex-col items-center justify-center px-4 pt-16 pb-14 text-center">
         <h1 className="font-elegant leading-[0.85] drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
-          <span className="block text-7xl italic sm:text-8xl md:text-9xl">PageTurn</span>
-          <span className="mt-2 block text-6xl tracking-wide uppercase sm:text-8xl md:text-[8.5rem]">Library</span>
+          <span className="block text-6xl font-bold tracking-tight sm:text-8xl md:text-9xl">PageTurn</span>
+          <span className="mt-4 block text-2xl font-light tracking-[0.45em] uppercase sm:text-4xl md:text-5xl">Library</span>
         </h1>
-        <p className="mt-8 rounded-full border border-[#f3eee3]/80 px-6 py-2 font-elegant text-lg tracking-wide uppercase sm:px-10 sm:text-2xl">
+        <p className="mt-8 rounded-full border border-[#f3eee3]/80 px-6 py-2 font-elegant text-sm font-medium tracking-[0.2em] uppercase sm:px-10 sm:text-base">
           A journey through books
         </p>
 
@@ -67,7 +68,7 @@ export function WelcomePage() {
               className="group flex items-center justify-between gap-4 rounded-2xl border border-[#f3eee3]/40 bg-black/30 px-6 py-5 text-left backdrop-blur-sm transition hover:border-[#f3eee3] hover:bg-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f3eee3]"
             >
               <span>
-                <span className="block font-elegant text-2xl font-semibold">{choice.title}</span>
+                <span className="block font-elegant text-xl font-semibold">{choice.title}</span>
                 <span className="mt-0.5 block text-sm text-[#f3eee3]/75">{choice.text}</span>
               </span>
               <ArrowRight className="size-6 shrink-0 transition group-hover:translate-x-1" aria-hidden />

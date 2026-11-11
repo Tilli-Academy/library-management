@@ -18,7 +18,7 @@ export const COVER_STYLES: { id: CoverStyle; label: string }[] = [
   { id: 'leather', label: 'Classic leather' },
 ]
 
-const SERIF = "'Instrument Serif', Georgia, serif"
+const SERIF = "'Inter Variable', system-ui, sans-serif"
 
 /** Same title => same "random" details, so a book's poster doesn't change every time it's drawn. */
 export function seededRandom(seed: string): () => number {
@@ -237,9 +237,8 @@ export function drawCover(canvas: HTMLCanvasElement, style: CoverStyle, title: s
   const p = PALETTES[style]
 
   // 1. Work out the lettering first. Long titles shrink until the text ends above the scenery.
-  // Instrument Serif has one weight (400); asking for bolder would make the browser fake it.
-  const titleFont = (size: number) => `400 ${size}px ${SERIF}`
-  const authorFont = (size: number) => `400 ${size}px ${SERIF}`
+  const titleFont = (size: number) => `700 ${size}px ${SERIF}`
+  const authorFont = (size: number) => `500 ${size}px ${SERIF}`
   const measureWith = (font: (size: number) => string) => (text: string, size: number) => {
     ctx.font = font(size)
     return ctx.measureText(text).width

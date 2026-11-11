@@ -114,8 +114,8 @@ export function Layout() {
 function Wordmark({ className = '' }: { className?: string }) {
   return (
     <p className={`font-display leading-none text-cream ${className}`}>
-      <span className="italic">PageTurn</span>{' '}
-      <span className="text-[0.62em] tracking-[0.18em] text-gold uppercase">Library</span>
+      <span className="font-bold">PageTurn</span>{' '}
+      <span className="text-[0.5em] font-medium tracking-[0.25em] text-gold uppercase">Library</span>
     </p>
   )
 }
