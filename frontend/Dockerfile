@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # --- Runtime stage: nginx without root rights, serving dist/ and forwarding /api to the backend ---
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 # The template is filled in from environment variables at startup (only PAGETURN_* names are replaced).
 COPY default.conf.template /etc/nginx/templates/default.conf.template
 ENV NGINX_ENVSUBST_FILTER=PAGETURN_
